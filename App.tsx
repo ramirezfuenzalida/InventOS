@@ -54,7 +54,7 @@ const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`
 const HERO_IMAGE_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 const APP_NAME = "OSWT";
 const APP_SUBTITLE = "Orquesta Sinfónica William Taylor";
-const APP_VERSION = "1.0.01";
+const APP_VERSION = "1.0.02";
 
 type ViewMode = 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'regular-detail' | 'bueno-detail';
 
@@ -404,9 +404,9 @@ const App: React.FC = () => {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const [year, month] = fecha.split('-').map(Number);
     const updatedItem = { Estudiante: studentName, Curso: curso, Prestado: 'SÍ', Ubicacion: 'HOGAR', FechaSalida: fecha, HoraSalida: timeStr };
-    setData(prev => prev.map(item => item.id === id ? { ...item, ...updatedItem } : item));
+    setData(prev => prev.map(item => item.id.toString() === id.toString() ? { ...item, ...updatedItem } : item));
 
-    const selectedItem = data.find(i => i.id === id);
+    const selectedItem = data.find(i => i.id.toString() === id.toString());
     const newHistoryRecord: MovementRecord = {
       id: Math.random().toString(36).substr(2, 9),
       instrumentId: id,
@@ -430,9 +430,9 @@ const App: React.FC = () => {
 
   const handleReturn = (id: number, fecha: string) => {
     const updatedItem = { Prestado: 'NO', Ubicacion: 'SALA DE MÚSICA', FechaRetorno: fecha, Estudiante: '', Curso: '' };
-    setData(prev => prev.map(item => item.id === id ? { ...item, ...updatedItem } : item));
-    const historyRecord = history.find(rec => rec.instrumentId === id && rec.status === 'en_prestamo');
-    setHistory(prev => prev.map(rec => (rec.instrumentId === id && rec.status === 'en_prestamo') ? { ...rec, fechaRetorno: fecha, status: 'completado' } : rec));
+    setData(prev => prev.map(item => item.id.toString() === id.toString() ? { ...item, ...updatedItem } : item));
+    const historyRecord = history.find(rec => rec.instrumentId.toString() === id.toString() && rec.status === 'en_prestamo');
+    setHistory(prev => prev.map(rec => (rec.instrumentId.toString() === id.toString() && rec.status === 'en_prestamo') ? { ...rec, fechaRetorno: fecha, status: 'completado' } : rec));
 
     supabase.from('inventory').update({ ...updatedItem, id: String(id) }).eq('id', String(id)).then(({ error }) => error && console.error(error));
     if (historyRecord && historyRecord.id) {
