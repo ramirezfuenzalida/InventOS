@@ -1,183 +1,218 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, Music, X, Calendar, AlertCircle } from 'lucide-react';
-import { InventoryItem, Student } from '../types.ts';
-import { isItemLoaned, globalNormalize } from '../utils.ts';
-import { supabase } from '../supabaseClient';
+import React, { useState, useMemo } from 'react';
+import { Search, Music, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, X, Calendar, AlertCircle } from 'lucide-react';
+import { InventoryItem } from '../types.ts';
+import { isItemLoaned } from '../utils.ts';
 
 interface StudentCheckOutProps {
   inventory: InventoryItem[];
   onConfirm: (id: number, student: string, curso: string, fecha: string) => void;
   onReturn: (id: number, fecha: string) => void;
   onCancel?: () => void;
-  isExternalView?: boolean;
-  availableStudents?: Student[];
 }
 
-const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm, onReturn, onCancel, isExternalView, availableStudents: propsStudents }) => {
+const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm, onReturn, onCancel }) => {
   const [mode, setMode] = useState<'out' | 'in'>('out');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedInstrument, setSelectedInstrument] = useState<InventoryItem | null>(null);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [students, setStudents] = useState<Student[]>(propsStudents || []);
 
-  useEffect(() => {
-    if (!propsStudents || propsStudents.length === 0) {
-      const fetchStudents = async () => {
-        const { data } = await supabase.from('students').select('*');
-        if (data) setStudents(data);
-      };
-      fetchStudents();
-    }
-  }, [propsStudents]);
+  // Normalización SOLO para la búsqueda, no para los datos
+  const searchNormalize = (val: any) => (val || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-  const normalize = (val: any) => (val || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-
-  const results = useMemo(() => {
-    const term = normalize(searchTerm);
-    
-    // Si estamos en retorno y no hay búsqueda, mostramos los instrumentos ya prestados
-    if (mode === 'in' && !term) {
-      return inventory.filter(item => isItemLoaned(item)).map(item => ({ type: 'item', data: item })).slice(0, 10);
-    }
-    
-    if (!term) return [];
-
-    // Buscar en inventario (por instrumento, serie o estudiante asignado)
-    const itemMatches = inventory.filter(item => {
-      const match = normalize(item.Instrumento).includes(term) || 
-                    normalize(item.Serie).includes(term) || 
-                    normalize(item.Estudiante).includes(term);
-      if (mode === 'in') return match && isItemLoaned(item);
-      return match;
-    }).map(item => ({ type: 'item', data: item }));
-
-    // Buscar en estudiantes (por nombre) - Solo en modo salida
-    let studentMatches: any[] = [];
-    if (mode === 'out') {
-      studentMatches = students.filter(s => normalize(s.name).includes(term))
-        .map(s => ({ type: 'student', data: s }));
+  const searchResults = useMemo(() => {
+    const term = searchNormalize(searchTerm);
+    if (!term) {
+      if (mode === 'in') return inventory.filter(item => isItemLoaned(item)).slice(0, 15);
+      return [];
     }
 
-    return [...itemMatches, ...studentMatches].slice(0, 10);
-  }, [inventory, students, searchTerm, mode]);
-
-  const handleSelect = (result: any) => {
-    if (result.type === 'item') {
-      const item = result.data;
-      setSelectedInstrument(item);
-      // Si el item ya tiene estudiante, lo pre-cargamos
-      const student = students.find(s => normalize(s.name) === normalize(item.Estudiante));
-      if (student) setSelectedStudent(student);
-      else setSelectedStudent({ id: 'temp', name: item.Estudiante || '', course: item.Curso || '', instrument: item.Instrumento || '' });
-    } else {
-      const student = result.data;
-      setSelectedStudent(student);
-      // Buscar un instrumento disponible que coincida con lo que toca el alumno
-      const item = inventory.find(i => !isItemLoaned(i) && normalize(i.Instrumento).includes(normalize(student.instrument)));
-      if (item) setSelectedInstrument(item);
-    }
-    setSearchTerm('');
-  };
+    return inventory.filter(item => {
+      const studentMatch = searchNormalize(item.Estudiante).includes(term);
+      const instrumentMatch = searchNormalize(item.Instrumento).includes(term);
+      const serieMatch = searchNormalize(item.Serie).includes(term);
+      const modelMatch = searchNormalize(item.Modelo).includes(term);
+      const brandMatch = searchNormalize(item.Marca).includes(term);
+      
+      const isMatch = studentMatch || instrumentMatch || serieMatch || modelMatch || brandMatch;
+      
+      if (mode === 'in') return isMatch && isItemLoaned(item);
+      return isMatch;
+    }).slice(0, 10);
+  }, [inventory, searchTerm, mode]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedInstrument && selectedStudent) {
-      if (mode === 'out') {
-        onConfirm(Number(selectedInstrument.id), selectedStudent.name, selectedStudent.course, selectedDate);
-      } else {
-        onReturn(Number(selectedInstrument.id), selectedDate);
-      }
-      setIsSubmitted(true);
+    if (!selectedItem) return;
+
+    if (mode === 'out') {
+      // Usar EXACTAMENTE los datos del item del Excel
+      onConfirm(
+        Number(selectedItem.id), 
+        selectedItem.Estudiante || '', 
+        selectedItem.Curso || '', 
+        selectedDate
+      );
+    } else {
+      onReturn(Number(selectedItem.id), selectedDate);
     }
+    setIsSubmitted(true);
   };
 
   if (isSubmitted) {
     return (
-      <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 p-10 rounded-[3rem] text-center shadow-2xl">
-        <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-8"><CheckCircle className="w-10 h-10 text-emerald-500" /></div>
-        <h2 className="text-3xl font-black text-white uppercase italic mb-4">Registro Exitoso</h2>
-        <button onClick={() => { setIsSubmitted(false); setSelectedInstrument(null); setSelectedStudent(null); setSearchTerm(''); }} className="w-full bg-indigo-600 py-5 rounded-2xl font-black text-white uppercase tracking-widest text-xs hover:bg-indigo-500 transition-colors"><RotateCcw className="w-4 h-4 inline mr-2" /> Nuevo registro</button>
+      <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 p-12 rounded-[3rem] text-center shadow-2xl animate-in zoom-in duration-500">
+        <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-10">
+          <CheckCircle className="w-12 h-12 text-emerald-500" />
+        </div>
+        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter mb-4">Registro Exitoso</h2>
+        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mb-10">La nube ha sido actualizada</p>
+        <button 
+          onClick={() => { setIsSubmitted(false); setSelectedItem(null); setSearchTerm(''); }}
+          className="w-full bg-indigo-600 py-6 rounded-[2rem] font-black text-white flex items-center justify-center gap-4 uppercase tracking-widest text-xs hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20"
+        >
+          <RotateCcw className="w-5 h-5" /> OTRO MOVIMIENTO
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 px-4 animate-in fade-in duration-500">
-      <div className="bg-slate-900/40 border border-slate-800 rounded-[2.5rem] shadow-2xl backdrop-blur-md overflow-hidden">
+    <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-700">
+      <div className="bg-slate-900/40 border border-slate-800 rounded-[3rem] shadow-2xl backdrop-blur-xl overflow-hidden">
+        {/* Tabs de modo - Estilo Original */}
         <div className="flex p-2 bg-slate-950/50 border-b border-slate-800/50">
-          <button onClick={() => { setMode('out'); setSelectedInstrument(null); setSelectedStudent(null); }} className={`flex-1 py-5 rounded-[2rem] text-xs font-black uppercase tracking-widest transition-all ${mode === 'out' ? 'bg-emerald-600 text-white' : 'text-slate-600'}`}>
-            <LogOut className="w-4 h-4 inline mr-2" /> Salida
+          <button
+            type="button"
+            onClick={() => { setMode('out'); setSelectedItem(null); setSearchTerm(''); }}
+            className={`flex-1 py-6 rounded-[2.5rem] text-xs font-black uppercase tracking-widest transition-all ${mode === 'out' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/20' : 'text-slate-600 hover:text-slate-400'}`}
+          >
+            <LogOut className="w-5 h-5 inline mr-3" /> Salida
           </button>
-          <button onClick={() => { setMode('in'); setSelectedInstrument(null); setSelectedStudent(null); }} className={`flex-1 py-5 rounded-[2rem] text-xs font-black uppercase tracking-widest transition-all ${mode === 'in' ? 'bg-indigo-600 text-white' : 'text-slate-600'}`}>
-            <LogIn className="w-4 h-4 inline mr-2" /> Retorno
+          <button
+            type="button"
+            onClick={() => { setMode('in'); setSelectedItem(null); setSearchTerm(''); }}
+            className={`flex-1 py-6 rounded-[2.5rem] text-xs font-black uppercase tracking-widest transition-all ${mode === 'in' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20' : 'text-slate-600 hover:text-slate-400'}`}
+          >
+            <LogIn className="w-5 h-5 inline mr-3" /> Retorno
           </button>
         </div>
 
-        <div className="p-6 sm:p-12 space-y-8">
-          {!selectedInstrument ? (
-            <div className="space-y-6">
-              <div className="relative">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-500" />
+        <div className="p-8 md:p-14 space-y-10">
+          {!selectedItem ? (
+            <div className="space-y-8">
+              <div className="relative group">
+                <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-8 h-8 text-slate-700 group-focus-within:text-indigo-500 transition-colors" />
                 <input
                   type="text"
+                  className="w-full bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-[2.5rem] py-8 pl-20 pr-10 text-2xl font-black text-white placeholder:text-slate-800 outline-none transition-all uppercase"
+                  placeholder={mode === 'out' ? "Escribe nombre del alumno..." : "Buscar instrumento o alumno..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={mode === 'out' ? "Escribe nombre del alumno..." : "Buscar instrumento prestado..."}
-                  className="w-full bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-[2rem] pl-16 pr-8 py-6 text-xl font-bold text-white uppercase outline-none transition-all"
                   autoFocus
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                {results.map((res, idx) => (
+              <div className="space-y-4">
+                {searchResults.map((item) => (
                   <button
-                    key={idx}
+                    key={item.id}
                     type="button"
-                    onClick={() => handleSelect(res)}
-                    className="bg-slate-900/60 p-5 rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all flex items-center justify-between text-left group"
+                    onClick={() => setSelectedItem(item)}
+                    className="w-full bg-slate-900/40 border border-white/5 p-8 rounded-[2.5rem] flex items-center justify-between hover:bg-slate-800/60 hover:border-indigo-500/30 transition-all group text-left"
                   >
-                    <div className="flex items-center gap-5">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${res.type === 'student' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                        {res.type === 'student' ? <User className="w-6 h-6" /> : <Music className="w-6 h-6" />}
+                    <div className="flex items-center gap-8">
+                      <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center ${isItemLoaned(item) ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                        <Music className="w-8 h-8" />
                       </div>
                       <div>
-                        <p className="text-white font-black uppercase italic text-base">
-                          {res.type === 'student' ? res.data.name : res.data.Instrumento}
-                        </p>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                          {res.type === 'student' ? `${res.data.instrument} • ${res.data.course}` : `${res.data.Estudiante || 'DISPONIBLE'} • ${res.data.Serie}`}
-                        </p>
+                        <p className="text-white font-black uppercase italic text-xl leading-none mb-2">{item.Estudiante || 'DISPONIBLE'}</p>
+                        <div className="flex flex-wrap gap-3">
+                          <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{item.Instrumento}</span>
+                          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">|</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.Marca} {item.Modelo}</span>
+                          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">|</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">S/N: {item.Serie}</span>
+                        </div>
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-2">{item.Curso || 'SIN CURSO'}</p>
                       </div>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-slate-700 group-hover:text-white transition-colors" />
+                    <ArrowRight className="w-6 h-6 text-slate-700 group-hover:text-white transition-all" />
                   </button>
                 ))}
+                
+                {searchTerm && searchResults.length === 0 && (
+                  <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+                    <p className="text-slate-700 font-black uppercase italic tracking-[0.2em]">No se encontraron coincidencias exactas</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
             <div className="space-y-10 animate-in zoom-in-95 duration-300">
-              <div className="bg-indigo-600/5 p-10 rounded-[3rem] border-2 border-indigo-500/30 relative">
-                <button type="button" onClick={() => { setSelectedInstrument(null); setSelectedStudent(null); }} className="absolute top-6 right-6 p-3 bg-slate-900 rounded-2xl text-slate-500 hover:text-white"><X className="w-6 h-6" /></button>
-                <div className="flex items-center gap-6">
-                  <div className="w-20 h-20 bg-indigo-600/20 rounded-[2rem] flex items-center justify-center text-indigo-400"><Music className="w-10 h-10" /></div>
-                  <div>
-                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Confirmar Operación</p>
-                    <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none">{selectedStudent?.name || 'ALUMNO'}</h3>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-2">{selectedInstrument.Instrumento} • {selectedInstrument.Serie}</p>
+              <div className="bg-indigo-600/5 p-12 rounded-[3.5rem] border-2 border-indigo-500/20 relative">
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedItem(null)} 
+                  className="absolute top-8 right-8 p-4 bg-slate-900 rounded-[1.5rem] text-slate-500 hover:text-white transition-all shadow-xl"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+                
+                <div className="flex flex-col md:flex-row items-center gap-10">
+                  <div className="w-28 h-28 bg-slate-900 rounded-[2rem] flex items-center justify-center text-indigo-400 border border-white/5 shadow-inner">
+                    <User className="w-14 h-14" />
+                  </div>
+                  <div className="text-center md:text-left flex-1">
+                    <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.4em] mb-3">RESUMEN DEL REGISTRO</p>
+                    <h3 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-none mb-6">{selectedItem.Estudiante}</h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-[#020617] p-8 rounded-[2rem] border border-white/5">
+                      <div>
+                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Instrumento y Modelo</p>
+                        <p className="text-white font-bold text-sm uppercase">{selectedItem.Instrumento} - {selectedItem.Marca} {selectedItem.Modelo}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Curso</p>
+                        <p className="text-white font-bold text-sm uppercase">{selectedItem.Curso}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Número de Serie</p>
+                        <p className="text-white font-bold text-sm uppercase">{selectedItem.Serie}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Ubicación Actual</p>
+                        <p className={`text-sm font-bold uppercase ${isItemLoaned(selectedItem) ? 'text-amber-500' : 'text-emerald-500'}`}>
+                          {selectedItem.Ubicacion}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 block mb-2">Fecha</label>
-                  <input type="date" className="w-full px-6 py-5 bg-[#020617] border-2 border-slate-800 rounded-[2rem] text-white font-bold outline-none" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="md:col-span-1 space-y-3">
+                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em] ml-6">FECHA</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-700" />
+                    <input
+                      type="date"
+                      className="w-full bg-[#020617] border-2 border-slate-900 rounded-[2rem] py-7 pl-16 pr-8 text-white font-black outline-none focus:border-indigo-500/50 transition-all shadow-xl"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <button onClick={handleSubmit} className={`md:col-span-2 py-8 rounded-[2rem] font-black text-xl text-white shadow-2xl transition-all active:scale-95 ${mode === 'out' ? 'bg-emerald-600 shadow-emerald-600/20' : 'bg-indigo-600 shadow-indigo-600/20'}`}>
-                  {mode === 'out' ? 'CONFIRMAR SALIDA' : 'CONFIRMAR RETORNO'}
+                
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className={`md:col-span-2 py-8 rounded-[2.5rem] font-black text-2xl flex items-center justify-center gap-6 transition-all shadow-2xl hover:scale-[1.02] active:scale-95 text-white ${mode === 'out' ? 'bg-emerald-600 shadow-emerald-600/20' : 'bg-indigo-600 shadow-indigo-600/20'}`}
+                >
+                  {mode === 'out' ? <LogOut className="w-8 h-8" /> : <LogIn className="w-8 h-8" />}
+                  {mode === 'out' ? 'CONFIRMAR SALIDA' : 'PROCESAR RETORNO'}
                 </button>
               </div>
             </div>
