@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Search, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, Tag, UserCheck, AlertCircle } from 'lucide-react';
+import { Search, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, Tag, UserCheck, AlertCircle, Music } from 'lucide-react';
 import { InventoryItem } from '../types.ts';
 import { globalNormalize, isItemLoaned } from '../utils.ts';
 
@@ -97,70 +97,35 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
   const searchResults = useMemo(() => {
     const term = normalizeText(instrumentSearch);
 
-    // SI NO HAY BUSQUEDA PERO HAY ALUMNO SELECCIONADO: Mostrar instrumentos disponibles sugeridos
-    if (!term && mode === 'out' && studentName && !selectedInstrument) {
-      return inventory.filter(item => !isItemLoaned(item)).slice(0, 10);
-    }
+    // Si ya seleccionamos el instrumento final, no mostrar nada
+    if (selectedInstrument) return [];
+    const searchLower = instrumentSearch.toLowerCase().trim();
+    if (!searchLower) return [];
 
-    // Si no hay búsqueda ni alumno, no mostrar nada
-    if (!term) return [];
-
-    // 1. Instrumentos
-    const instrumentHits = inventory.filter(item => {
-      const loaned = isItemLoaned(item);
-
-      // En modo RETORNO: solo lo que ya está prestado (en hogar)
-      if (mode === 'in' && !loaned) return false;
-
-      // Coincidencia por texto
-      const matchesText =
-        normalizeText(item.Instrumento).includes(term) ||
-        normalizeText(item.Estudiante).includes(term) ||
-        normalizeText(item.Marca).includes(term) ||
-        normalizeText(item.Serie).includes(term) ||
-        normalizeText(item.Modelo).includes(term);
-
-      return matchesText;
+    // Filter instruments that match the search
+    const filtered = inventory.filter(item => {
+      const studentName = (item.Estudiante || '').toLowerCase();
+      const instrumentName = (item.Instrumento || '').toLowerCase();
+      const serie = (item.Serie || '').toLowerCase();
+      
+      return studentName.includes(searchLower) || instrumentName.includes(searchLower) || serie.includes(searchLower);
     });
 
-    // 2. Estudiantes del Directorio (Solo en modo SALIDA y si no hay uno seleccionado)
-    let studentHits: any[] = [];
-    if (mode === 'out' && availableStudents && !studentName) {
-      studentHits = availableStudents
-        .filter(s => normalizeText(s.name).includes(term))
-        .map(s => ({ ...s, isStudentOnly: true }));
+    if (mode === 'in') {
+      return filtered.filter(item => isItemLoaned(item)).slice(0, 10);
     }
-
-    // Combinar y limitar: PRIORIZAMOS ESTUDIANTES AL PRINCIPIO
-    const combined = [...studentHits.slice(0, 5), ...instrumentHits];
-    return combined.slice(0, 20);
-  }, [instrumentSearch, inventory, mode, availableStudents, studentName, selectedInstrument]);
+    return filtered.slice(0, 10);
+  }, [instrumentSearch, inventory, mode]);
 
   const handleStudentNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
     setStudentName(name);
     setValidationError(null); // Reset error on change
-
-    // If a student is selected from the datalist, try to autofill the course
-    const listToSearch = mode === 'out' ? availableStudents : loanedStudents;
-    const found = listToSearch?.find(s => s.name.toUpperCase() === name.toUpperCase());
-    if (found && !studentCourse) {
-      setStudentCourse(found.course);
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedInstrument) {
-      const listToSearch = mode === 'out' ? availableStudents : loanedStudents;
-      const isRegistered = listToSearch?.some(s => normalizeText(s.name) === normalizeText(studentName));
-
-      // No longer blocking if not in directory - allow manual entry
-      // if (mode === 'out' && !isRegistered) {
-      //   setValidationError(`El estudiante "${studentName}" no está registrado. Por favor, regístrelo primero en el Directorio.`);
-      //   return;
-      // }
-
       if (mode === 'in') {
         const recordName = normalizeText(selectedInstrument.Estudiante);
         const inputName = normalizeText(studentName);
@@ -222,7 +187,7 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
             <AlertCircle className="w-5 h-5 shrink-0" />
             <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">
               {mode === 'out'
-                ? 'Se muestra la lista completa de instrumentos y alumnos para procesar la salida.'
+                ? 'Busque el instrumento por nombre, serie o estudiante asignado.'
                 : 'Solo se muestran instrumentos con SALIDA ACTIVA para procesar el retorno.'}
             </p>
           </div>
@@ -232,42 +197,47 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Fecha</label>
               <input type="date" className="w-full px-5 py-4 bg-[#020617] border-2 border-slate-800 rounded-2xl text-white font-bold focus:border-indigo-500 outline-none" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
             </div>
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block text-center">Buscar Instrumento / Alumno</label>
+            <div className="md:col-span-2 space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block text-center">
+                {mode === 'out' ? 'BUSCAR INSTRUMENTO' : 'SELECCIONAR RETORNO'}
+              </label>
+              
               <div className="relative">
-                <input
-                  type="text"
-                  autoComplete="off"
-                  placeholder={mode === 'out' ? "Escriba nombre de alumno o instrumento..." : "Escriba nombre para devolver..."}
-                  className="w-full px-6 py-4.5 bg-[#020617] border-2 border-slate-800 rounded-2xl text-white font-bold focus:border-indigo-500 outline-none text-center placeholder:text-center"
-                  value={instrumentSearch}
-                  onChange={(e) => { setInstrumentSearch(e.target.value); setSelectedInstrument(null); }}
-                />
+                {!selectedInstrument && (
+                  <div className="relative group">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-500 group-focus-within:text-indigo-500 transition-colors" />
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={instrumentSearch}
+                      onChange={(e) => setInstrumentSearch(e.target.value)}
+                      placeholder={mode === 'out' ? "Escriba nombre del instrumento..." : "Buscar alumno o instrumento..."}
+                      className="w-full bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-[2rem] pl-16 pr-8 py-6 text-xl font-bold text-white placeholder:text-slate-700 outline-none transition-all shadow-2xl uppercase"
+                      autoFocus
+                    />
+                  </div>
+                )}
 
-                {/* Badge Alumno Seleccionado (Feedback Visual) */}
-                {studentName && mode === 'out' && !selectedInstrument && (
-                  <div className="mt-4 animate-in slide-in-from-top-2 duration-300">
-                    <div className="bg-indigo-600/20 border border-indigo-500/40 px-5 py-3 rounded-2xl flex items-center justify-between shadow-lg backdrop-blur-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center shadow-inner">
-                          <UserCheck className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-[8px] font-black text-indigo-400 uppercase tracking-tighter">Estudiante Seleccionado</p>
-                          <p className="text-xs font-bold text-white uppercase">{studentName}</p>
-                        </div>
-                      </div>
-                      <button 
+                {/* Quick Selection for Returns (Only in 'in' mode and when not searching yet) */}
+                {mode === 'in' && !instrumentSearch && !selectedInstrument && loanedStudents.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <p className="col-span-full text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1">Retornos Pendientes:</p>
+                    {loanedStudents.slice(0, 6).map((student, idx) => (
+                      <button
+                        key={`quick-${idx}`}
                         type="button"
-                        onClick={() => { setStudentName(''); setStudentCourse(''); }}
-                        className="text-[9px] font-black text-indigo-400 uppercase hover:text-white transition-colors border-b border-indigo-400/30"
+                        onClick={() => setInstrumentSearch(student.name)}
+                        className="flex items-center gap-3 p-4 bg-indigo-600/5 border border-indigo-500/10 rounded-2xl hover:bg-indigo-600/20 hover:border-indigo-500/30 transition-all group text-left"
                       >
-                         Cambiar
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-black text-white truncate uppercase">{student.name}</p>
+                          <p className="text-[8px] font-bold text-indigo-500 uppercase">{student.course}</p>
+                        </div>
                       </button>
-                    </div>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase text-center mt-3 tracking-widest animate-pulse">
-                       AQUÍ ABAJO BUSQUE EL INSTRUMENTO ↓
-                    </p>
+                    ))}
                   </div>
                 )}
 
@@ -275,64 +245,37 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                   <div className="absolute top-full left-0 right-0 mt-2 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-800/50">
                     {searchResults.map((item: any, idx) => (
                       <button
-                        key={item.id || `student-${idx}`}
+                        key={item.id || `inst-${idx}`}
                         type="button"
                         onClick={() => {
-                          if (item.isStudentOnly) {
-                            // Si selecciona un alumno, llenar los campos de nombre y curso
-                            setStudentName(item.name);
-                            setStudentCourse(item.course);
-                            setInstrumentSearch(""); // Limpiar búsqueda para que ahora busque instrumento
-                            setValidationError(null);
-                          } else {
-                            // Si selecciona un instrumento, flujo normal
-                            setSelectedInstrument(item);
-                            setInstrumentSearch(item.Instrumento);
-                            setStudentName(item.Estudiante || studentName);
-                            setStudentCourse(item.Curso || studentCourse);
-                          }
+                          setStudentName(item.Estudiante);
+                          const student = availableStudents?.find(s => globalNormalize(s.name) === globalNormalize(item.Estudiante));
+                          setStudentCourse(student?.course || '');
+                          setSelectedInstrument(item);
+                          setInstrumentSearch('');
                         }}
-                        className="w-full px-6 py-4 text-left hover:bg-indigo-500/10 flex justify-between items-center group transition-colors"
+                        className="w-full flex items-center justify-between px-6 py-5 bg-[#0f172a] hover:bg-indigo-600/20 transition-all group text-left"
                       >
-                        {item.isStudentOnly ? (
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
-                              <User className="w-5 h-5 text-indigo-400" />
-                            </div>
-                            <div>
-                              <p className="text-white font-black uppercase italic group-hover:text-indigo-400">{item.name}</p>
-                              <p className="text-[9px] font-bold text-slate-500 uppercase">{item.course || 'SIN CURSO'}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-3">
-                              <span className="text-white font-black uppercase italic group-hover:text-indigo-400">{item.Instrumento}</span>
-                              <span className="text-[9px] font-black px-2 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded uppercase">
-                                {item.Serie || 'S/N'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                                <Tag className="w-2.5 h-2.5" /> {item.Marca || 'GENÉRICO'} {item.Modelo ? `(${item.Modelo})` : ''}
-                              </span>
-                              {item.Estudiante && (
-                                <span className="text-[9px] font-black text-indigo-400 uppercase flex items-center gap-1 bg-indigo-500/5 px-2 py-0.5 rounded">
-                                  <UserCheck className="w-2.5 h-2.5" /> {item.Estudiante}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
                         <div className="flex items-center gap-4">
-                          {item.isStudentOnly ? (
-                            <span className="text-[8px] font-black px-2 py-1 rounded-md border bg-indigo-500/10 border-indigo-500/20 text-indigo-400">ALUMNO DIRECTO</span>
-                          ) : (
-                            <span className={`text-[8px] font-black px-2 py-1 rounded-md border ${isItemLoaned(item) ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'}`}>
-                              {isItemLoaned(item) ? 'EN HOGAR' : 'EN SALA'}
-                            </span>
-                          )}
-                          <ArrowRight className="w-4 h-4 text-slate-700" />
+                          <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:border-indigo-500/50 transition-all">
+                            <Music className="w-6 h-6 text-indigo-400" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-black text-white uppercase italic tracking-tight group-hover:text-indigo-300 transition-colors">
+                              {item.Instrumento}
+                            </h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{item.Estudiante || 'DISPONIBLE'}</span>
+                              <span className="text-[8px] text-slate-600">•</span>
+                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">SERIE: {item.Serie || 'S/N'}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md border ${isItemLoaned(item) ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'}`}>
+                            {isItemLoaned(item) ? 'Fuera' : 'En Sala'}
+                          </span>
+                          <ArrowRight className="w-4 h-4 text-slate-700 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all" />
                         </div>
                       </button>
                     ))}
@@ -352,58 +295,39 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
           </div>
 
           {selectedInstrument && (
-            <div className="p-8 bg-slate-950/40 border border-slate-800 rounded-[2rem] space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
-              <div className="flex flex-col sm:flex-row gap-6 border-b border-slate-800 pb-6">
-                <div className="flex-1">
-                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Instrumento Seleccionado</p>
-                  <p className="text-xl font-black text-white italic uppercase tracking-tighter">{selectedInstrument.Instrumento}</p>
-                  <div className="flex gap-4 mt-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Marca: <span className="text-slate-200">{selectedInstrument.Marca || 'S/M'}</span></span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Serie: <span className="text-slate-200">{selectedInstrument.Serie || 'S/N'}</span></span>
+            <div className="p-8 bg-indigo-600/10 border-2 border-indigo-500/30 rounded-[2rem] space-y-6 animate-in zoom-in-95 duration-300">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Confirmar Operación</p>
+                  <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                    {selectedInstrument.Instrumento}
+                  </h3>
+                  <div className="flex gap-4">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Serie: <span className="text-white">{selectedInstrument.Serie || 'S/N'}</span></span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Marca: <span className="text-white">{selectedInstrument.Marca || 'S/M'}</span></span>
                   </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Estado de Inventario</p>
-                  <span className={`inline-block text-[10px] font-black uppercase px-3 py-1 rounded-full border ${isItemLoaned(selectedInstrument) ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'}`}>
-                    {isItemLoaned(selectedInstrument) ? 'Fuera de Sala' : 'En Sala (Disponible)'}
-                  </span>
-                </div>
+                <button 
+                  type="button" 
+                  onClick={() => { setSelectedInstrument(null); setInstrumentSearch(''); }}
+                  className="bg-slate-900 p-2 rounded-full text-slate-500 hover:text-white transition-colors"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nombre Alumno</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={mode === 'in'}
-                    placeholder="Seleccione alumno arriba o ingrese nombre"
-                    className={`w-full px-6 py-5 bg-[#020617] border-2 rounded-2xl text-white font-black uppercase transition-all ${validationError ? 'border-red-500 animate-shake' : 'border-slate-800 focus:border-indigo-500'} ${mode === 'in' ? 'opacity-40 cursor-not-allowed bg-slate-950 shadow-inner' : ''}`}
-                    value={studentName}
-                    onChange={handleStudentNameChange} 
-                  />
-                  {validationError && (
-                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mt-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                      <AlertCircle className="w-3 h-3" /> {validationError}
+              <div className="bg-[#020617] p-5 rounded-2xl border border-slate-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                    <Music className="text-indigo-400 w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Resumen de Selección:</p>
+                    <p className="text-sm font-bold text-white uppercase italic">{selectedInstrument.Instrumento}</p>
+                    <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-tighter">
+                      {studentCourse || 'CURSO NO ASIGNADO'}
                     </p>
-                  )}
-                  {availableStudents && mode === 'out' && (
-                    <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-2 flex items-center gap-1">
-                      <User className="w-2.5 h-2.5" /> Estudiante del directorio disponible
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Curso / Grado</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={mode === 'in'}
-                    placeholder="Ej. 1RO MEDIO"
-                    className={`w-full px-6 py-5 bg-[#020617] border-2 border-slate-800 rounded-2xl text-white font-black uppercase focus:border-indigo-500 transition-colors ${mode === 'in' ? 'opacity-40 cursor-not-allowed bg-slate-950 shadow-inner' : ''}`}
-                    value={studentCourse}
-                    onChange={(e) => setStudentCourse(e.target.value)}
-                  />
+                  </div>
                 </div>
               </div>
             </div>

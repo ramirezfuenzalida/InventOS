@@ -28,17 +28,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
-interface Student {
-    id: string;
-    name: string;
-    course: string;
-    instrument?: string;
-    photo_url?: string;
-    phone?: string;
-    email?: string;
-    parent_name?: string;
-    parent_phone?: string;
-}
+import { Student } from '../types';
 
 const DirectoryView: React.FC = () => {
     const [students, setStudents] = useState<Student[]>([]);
@@ -136,21 +126,35 @@ const DirectoryView: React.FC = () => {
 
     useEffect(() => {
         fetchStudents();
+
+        // Sincronización en Tiempo Real (Supabase Realtime)
+        const channel = supabase.channel('realtime:directory_students')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+                fetchStudents();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const fetchStudents = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('students')
-            .select('*')
-            .order('name', { ascending: true });
+        try {
+            const { data, error } = await supabase
+                .from('students')
+                .select('*')
+                .order('name', { ascending: true });
 
-        if (error) {
-            console.error('Error fetching students:', error);
-        } else {
-            setStudents(data || []);
+            if (error) {
+                console.error('Error fetching students:', error);
+            } else {
+                setStudents(data || []);
+            }
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const filteredStudents = students.filter(s =>

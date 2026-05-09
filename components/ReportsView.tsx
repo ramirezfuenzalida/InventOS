@@ -120,7 +120,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ history, onClearHistory }) =>
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header Reporte */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-slate-900/40 p-8 rounded-[2rem] border border-slate-800">
         <div>
@@ -242,9 +242,9 @@ const ReportsView: React.FC<ReportsViewProps> = ({ history, onClearHistory }) =>
                   </td>
                   <td className="px-8 py-6">
                     {rec.status === 'completado' ? (
-                      <span className="text-[9px] font-black text-emerald-500 uppercase px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">Completado</span>
+                      <span className="inline-flex items-center justify-center text-[9px] font-black text-emerald-500 uppercase px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full leading-none whitespace-nowrap">Completado</span>
                     ) : (
-                      <span className="text-[9px] font-black text-amber-500 uppercase px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">En Hogar</span>
+                      <span className="inline-flex items-center justify-center text-[9px] font-black text-amber-500 uppercase px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full leading-none whitespace-nowrap">En Hogar</span>
                     )}
                   </td>
                   <td className="px-8 py-6 text-[10px] font-black text-slate-500">{rec.horaSalida}</td>

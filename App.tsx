@@ -41,6 +41,7 @@ import StudentCheckOut from './components/StudentCheckOut.tsx';
 import ReportsView from './components/ReportsView.tsx';
 import QRAccessView from './components/QRAccessView.tsx';
 import DirectoryView from './components/DirectoryView.tsx';
+import InventoryForm from './components/InventoryForm.tsx';
 import { supabase } from './supabaseClient.ts';
 import { globalNormalize, getEstadoCategoria, inferFamilia, isItemLoaned } from './utils.ts';
 
@@ -53,7 +54,7 @@ const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`
 const HERO_IMAGE_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 const APP_NAME = "OSWT";
 const APP_SUBTITLE = "Orquesta Sinfónica William Taylor";
-const APP_VERSION = "ExeApp 0.0.11";
+const APP_VERSION = "1.0.01";
 
 type ViewMode = 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'regular-detail' | 'bueno-detail';
 
@@ -89,8 +90,25 @@ const App: React.FC = () => {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
+    // Sincronización en Tiempo Real (Supabase Realtime)
+    const inventoryChannel = supabase.channel('realtime:inventory')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, fetchData)
+      .subscribe();
+
+    const historyChannel = supabase.channel('realtime:history')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'history' }, fetchData)
+      .subscribe();
+
+    const studentsChannel = supabase.channel('realtime:students')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, fetchData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(inventoryChannel);
+      supabase.removeChannel(historyChannel);
+      supabase.removeChannel(studentsChannel);
+    };
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -101,6 +119,7 @@ const App: React.FC = () => {
   const [processingMessage, setProcessingMessage] = useState("PROCESANDO...");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showHistoryDeleteConfirm, setShowHistoryDeleteConfirm] = useState(false);
+  const [showInventoryForm, setShowInventoryForm] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
@@ -178,8 +197,8 @@ const App: React.FC = () => {
         const mappedData: InventoryItem[] = rawData.map((row, index) => {
           const mappedItem: any = { id: String(index) };
           const standardFields: Record<string, string[]> = {
-            Instrumento: ['instrumento', 'item', 'descripcion del instrumento', 'nombre del instrumento'],
-            Familia: ['familia', 'seccion', 'categoria', 'grupo'],
+            Instrumento: ['instrumento', 'item', 'descripcion del instrumento', 'nombre del instrumento', 'instrumentos oswt'],
+            Familia: ['familia', 'seccion', 'categoria', 'grupo', 'familia de instrumento'],
             Marca: ['marca', 'brand', 'fabricante'],
             Estado: ['estado', 'condicion', 'status'],
             Modelo: ['modelo', 'model'],
@@ -189,12 +208,16 @@ const App: React.FC = () => {
             TipoCase: ['case', 'estuche'],
             Accesorios: ['accesorios'],
             Soporte: ['soporte'],
-            Limpio: ['limpio'],
-            Responsable: ['monitor', 'responsable'],
-            Estudiante: ['estudiante', 'alumno', 'nombre del alumno', 'nombre'],
-            Curso: ['curso', 'grado'],
-            Observaciones: ['observaciones', 'notes'],
-            Ubicacion: ['ubicacion', 'sala'],
+            Limpio: ['limpio', 'instrumento limpio'],
+            Responsable: ['monitor', 'responsable', 'monitor responsable'],
+            Estudiante: ['estudiante', 'alumno', 'nombre del alumno', 'nombre', 'responsable del instrumento', 'estudiante que lo utiliza'],
+            Curso: ['curso', 'grado', 'nivel', 'clase', 'ano', 'año', 'periodo', 'seccion', 'sección', 'grupo', 'estamento', 'nivel_escolar', 'aula', 'division', 'división', 'itinerario', 'paralelo', 'nivel academico', 'nivel académico', 'escolaridad', 'curso / grado'],
+            Telefono: ['telefono', 'teléfono', 'celular', 'móvil', 'contacto'],
+            Email: ['email', 'correo', 'mail', 'correo electrónico'],
+            Apoderado: ['apoderado', 'parent', 'tutor', 'nombre apoderado'],
+            TelefonoApoderado: ['teléfono apoderado', 'telefono apoderado', 'contacto apoderado', 'celular apoderado'],
+            Observaciones: ['observaciones', 'notes', 'observaciones generales'],
+            Ubicacion: ['ubicacion', 'sala', 'ubicacion del instrumento'],
             Prestado: ['prestado', 'hogar'],
             FechaSalida: ['fecha de salida'],
             HoraSalida: ['hora de salida'],
@@ -220,7 +243,7 @@ const App: React.FC = () => {
             if (!matchedField) {
               // Priority list of keywords to check for partial matches
               // We check 'Familia' and other specific ones BEFORE 'Instrumento' to avoid greedy matches
-              const priorityOrder = ['Familia', 'Medida', 'Medidas', 'Serie', 'Estado', 'Marca', 'Modelo', 'Estudiante', 'Instrumento'];
+              const priorityOrder = ['Familia', 'Medida', 'Medidas', 'Serie', 'Estado', 'Marca', 'Modelo', 'Estudiante', 'Curso', 'Instrumento'];
 
               for (const field of priorityOrder) {
                 const patterns = standardFields[field];
@@ -268,19 +291,34 @@ const App: React.FC = () => {
             if (delError) throw delError;
 
             // 2. Insertar nuevos datos del Excel
-            setProcessingMessage(`Insertando ${mappedData.length} registros...`);
+            // 2. Insertar nuevos datos del Excel (con de-duplicación por Serie)
+            const uniqueMappedData = mappedData.filter((item, index, self) =>
+              index === self.findIndex((t) => (
+                t.Serie && t.Serie === item.Serie
+              )) || !item.Serie
+            );
+
+            setProcessingMessage(`Insertando ${uniqueMappedData.length} registros únicos...`);
             const { error: invError } = await supabase.from('inventory').insert(
-              mappedData.map((item, idx) => ({ ...item, id: String(idx + 1) }))
+              uniqueMappedData.map((item, idx) => ({ ...item, id: String(idx + 1) }))
             );
             if (invError) throw invError;
 
             // 3. Actualizar base de datos de estudiantes
             const uploadStudents = Array.from(new Map(mappedData
               .filter(i => i.Estudiante && String(i.Estudiante).trim() !== '')
-              .map(i => [globalNormalize(i.Estudiante), {
-                name: String(i.Estudiante).toUpperCase(),
-                course: String(i.Curso || 'SIN CURSO').toUpperCase()
-              }])
+              .map(i => {
+                const sName = String(i.Estudiante).toUpperCase().trim();
+                const sCourse = String(i.Curso || i.metadata?.Curso || i.metadata?.CURSO || 'SIN CURSO').toUpperCase().trim();
+                return [globalNormalize(sName), {
+                  name: sName,
+                  course: sCourse,
+                  phone: i.Telefono || '',
+                  email: i.Email || '',
+                  parent_name: i.Apoderado || '',
+                  parent_phone: i.TelefonoApoderado || ''
+                }];
+              })
             ).values());
 
             if (uploadStudents.length > 0) {
@@ -289,7 +327,48 @@ const App: React.FC = () => {
               if (studError) console.warn("Error upserting students:", studError);
             }
 
-            // 4. Refrescar datos locales
+            // 4. Sincronizar estados activos desde el Historial (Solo reporte de Mayo)
+            setProcessingMessage("Sincronizando reporte de Mayo...");
+            const { data: activeLoans } = await supabase
+              .from('history')
+              .select('*')
+              .eq('status', 'en_prestamo')
+              .gte('created_at', '2026-05-01');
+
+            // Resetear todos a Sala primero (Garantizar limpieza)
+            await supabase.from('inventory').update({ 
+              Prestado: 'NO', 
+              Ubicacion: 'SALA DE MÚSICA'
+            }).not('id', 'is', null);
+
+            if (activeLoans && activeLoans.length > 0) {
+              setProcessingMessage(`Restaurando ${activeLoans.length} préstamos de Mayo...`);
+              
+              for (const loan of activeLoans) {
+                if (loan.serie) {
+                  await supabase.from('inventory')
+                    .update({ 
+                      Prestado: 'SÍ', 
+                      Ubicacion: 'HOGAR',
+                      Estudiante: loan.estudiante,
+                      Curso: loan.curso
+                    })
+                    .eq('Serie', loan.serie);
+                } else if (loan.instrumentName && loan.estudiante) {
+                  await supabase.from('inventory')
+                    .update({ 
+                      Prestado: 'SÍ', 
+                      Ubicacion: 'HOGAR',
+                      Estudiante: loan.estudiante,
+                      Curso: loan.curso
+                    })
+                    .eq('Instrumento', loan.instrumentName)
+                    .eq('Estudiante', loan.estudiante);
+                }
+              }
+            }
+
+            // 5. Refrescar datos locales
             const [invRes, histRes, studRes] = await Promise.all([
               supabase.from('inventory').select('*'),
               supabase.from('history').select('*').order('created_at', { ascending: false }),
@@ -558,7 +637,6 @@ const App: React.FC = () => {
                 <button onClick={() => { setViewMode('reports'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><BarChart3 className="w-5 h-5 mr-3" /> Reportes</button>
                 <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Alumnos</div>
                 <button onClick={() => { setViewMode('student-check'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'student-check' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><UserCheck className="w-5 h-5 mr-3" /> Salida/Retorno</button>
-                <button onClick={() => { setViewMode('directory'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'directory' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><Users className="w-5 h-5 mr-3" /> Estudiantes orquesta</button>
                 <button onClick={() => { setViewMode('qr-access'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'qr-access' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><QrCode className="w-5 h-5 mr-3" /> Acceso QR</button>
                 <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Herramientas</div>
                 <label className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-indigo-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all"><FileUp className="w-5 h-5 mr-3" /> Actualizar Excel<input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} /></label>
@@ -607,6 +685,14 @@ const App: React.FC = () => {
                 {viewMode === 'directory' ? 'Estudiantes orquesta' : 'InventarioWT'}
               </h1>
             </div>
+            {viewMode === 'list' && (
+              <button
+                onClick={() => setShowInventoryForm(true)}
+                className="bg-indigo-600 px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black text-white uppercase flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 mr-2"
+              >
+                <Music className="w-4 h-4" /> <span className="hidden sm:inline">Añadir Instrumento</span>
+              </button>
+            )}
             {data.length > 0 && (
               <button
                 onClick={() => {
@@ -615,12 +701,23 @@ const App: React.FC = () => {
                   XLSX.utils.book_append_sheet(wb, ws, "Inventario");
                   XLSX.writeFile(wb, "Inventario.xlsx");
                 }}
-                className="bg-emerald-600 px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black text-white uppercase flex items-center gap-2"
+                className="bg-emerald-600 px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black text-white uppercase flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
               >
                 <Save className="w-4 h-4" /> <span className="hidden sm:inline">Exportar</span>
               </button>
             )}
           </header>
+        )}
+
+        {showInventoryForm && (
+          <InventoryForm 
+            onClose={() => setShowInventoryForm(false)} 
+            onSave={(newItem) => {
+              // The Realtime listener will handle the global state update
+              // but we can update locally for immediate feedback if desired
+              setData(prev => [...prev, newItem]);
+            }} 
+          />
         )}
 
         <div className="p-4 sm:p-8 lg:p-12 w-full max-w-[1600px] mx-auto">

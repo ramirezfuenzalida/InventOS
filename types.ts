@@ -28,6 +28,12 @@ export interface Student {
   id: string;
   name: string;
   course: string;
+  instrument?: string;
+  photo_url?: string;
+  phone?: string;
+  email?: string;
+  parent_name?: string;
+  parent_phone?: string;
 }
 
 export interface MovementRecord {

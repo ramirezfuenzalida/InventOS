@@ -37,12 +37,9 @@ export const inferFamilia = (instrumento: string): string => {
 export const isItemLoaned = (item: any): boolean => {
     if (!item) return false;
     
-    const v = globalNormalize(item.Prestado || "");
-    const hasStudent = !!item.Estudiante && item.Estudiante.trim() !== "" && item.Estudiante.toUpperCase() !== "DISPONIBLE" && item.Estudiante.toUpperCase() !== "NO DISPONIBLE";
+    const prestado = globalNormalize(item.Prestado || "");
+    const ubicacion = globalNormalize(item.Ubicacion || "");
     
-    const isExplicitlyLoaned = v === 'si' || v === 'yes' || v === 'prestado' || v === 'en casa' || v === 'hogar' || v === 'salida';
-    
-    if (hasStudent && v !== 'no' && v !== 'disponible' && v !== 'en sala') return true;
-    
-    return isExplicitlyLoaned;
+    // Solo se considera prestado si explícitamente dice SÍ o HOGAR
+    return prestado === 'si' || ubicacion === 'hogar';
 };
