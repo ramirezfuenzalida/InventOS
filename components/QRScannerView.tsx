@@ -391,10 +391,14 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                       Continuar
                     </button>
                     <button
-                      onClick={() => deleteSession(session.id)}
-                      className="p-2.5 rounded-lg sm:rounded-xl text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+                      onClick={() => {
+                        if (confirm(`¿Eliminar sesión "${session.name}"? Esta acción no se puede deshacer.`)) {
+                          deleteSession(session.id);
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all flex items-center gap-1.5 font-black text-[9px] uppercase tracking-widest"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" /> Borrar
                     </button>
                   </div>
                 </div>
