@@ -6,9 +6,10 @@ import { globalNormalize, getEstadoCategoria, inferFamilia, isItemLoaned } from 
 
 interface InventoryTableProps {
   data: InventoryItem[];
+  onItemClick?: (item: InventoryItem) => void;
 }
 
-const InventoryTable: React.FC<InventoryTableProps> = ({ data }) => {
+const InventoryTable: React.FC<InventoryTableProps> = ({ data, onItemClick }) => {
   // isItemLoaned is now imported from utils.ts
 
   const safeUpperCase = (val: any) => val ? String(val).toUpperCase().trim() : "";
@@ -32,7 +33,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data }) => {
             const categoria = getEstadoCategoria(item.Estado);
             const loaned = isItemLoaned(item);
             return (
-              <tr key={idx} className="group transition-all hover:bg-slate-900/40 border-b border-slate-900/10">
+              <tr key={idx} className="group transition-all hover:bg-slate-900/40 border-b border-slate-900/10 cursor-pointer" onClick={() => onItemClick?.(item)}>
                 <td className="px-8 py-8 whitespace-nowrap"><span className="text-[11px] font-black text-slate-700 tracking-widest">{idx + 1}</span></td>
 
                 <td className="px-8 py-8 whitespace-nowrap">

@@ -28,7 +28,8 @@ import {
   Image as ImageIcon,
   History,
   Sun,
-  Moon
+  Moon,
+  Scan
 } from 'lucide-react';
 
 // Importaciones locales
@@ -42,6 +43,9 @@ import ReportsView from './components/ReportsView.tsx';
 import QRAccessView from './components/QRAccessView.tsx';
 import DirectoryView from './components/DirectoryView.tsx';
 import InventoryForm from './components/InventoryForm.tsx';
+import InstrumentDetail from './components/InstrumentDetail.tsx';
+import OverdueAlerts, { OverdueBadge } from './components/OverdueAlerts.tsx';
+import QRScannerView from './components/QRScannerView.tsx';
 import { supabase } from './supabaseClient.ts';
 import { globalNormalize, getEstadoCategoria, inferFamilia, isItemLoaned } from './utils.ts';
 
@@ -54,9 +58,9 @@ const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`
 const HERO_IMAGE_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 const APP_NAME = "OSWT";
 const APP_SUBTITLE = "Orquesta Sinfónica William Taylor";
-const APP_VERSION = "1.0.03";
+const APP_VERSION = "1.0.05";
 
-type ViewMode = 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'regular-detail' | 'bueno-detail';
+type ViewMode = 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'qr-scanner' | 'regular-detail' | 'bueno-detail';
 
 
 const App: React.FC = () => {
@@ -120,6 +124,8 @@ const App: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showHistoryDeleteConfirm, setShowHistoryDeleteConfirm] = useState(false);
   const [showInventoryForm, setShowInventoryForm] = useState(false);
+  const [selectedInstrument, setSelectedInstrument] = useState<InventoryItem | null>(null);
+  const [showOverdueAlerts, setShowOverdueAlerts] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
@@ -290,17 +296,11 @@ const App: React.FC = () => {
             const { error: delError } = await supabase.from('inventory').delete().neq('id', 'placeholder');
             if (delError) throw delError;
 
-            // 2. Insertar nuevos datos del Excel
-            // 2. Insertar nuevos datos del Excel (con de-duplicación por Serie)
-            const uniqueMappedData = mappedData.filter((item, index, self) =>
-              index === self.findIndex((t) => (
-                t.Serie && t.Serie === item.Serie
-              )) || !item.Serie
-            );
-
-            setProcessingMessage(`Insertando ${uniqueMappedData.length} registros únicos...`);
+            // 2. Insertar todos los instrumentos del Excel (sin filtrar por Serie duplicada)
+            // Muchos instrumentos comparten Serie (ej: "SIN NÚMERO", "VN44") y son instrumentos distintos
+            setProcessingMessage(`Insertando ${mappedData.length} registros...`);
             const { error: invError } = await supabase.from('inventory').insert(
-              uniqueMappedData.map((item, idx) => ({ ...item, id: String(idx + 1) }))
+              mappedData.map((item, idx) => ({ ...item, id: String(idx + 1) }))
             );
             if (invError) throw invError;
 
@@ -638,6 +638,7 @@ const App: React.FC = () => {
                 <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Alumnos</div>
                 <button onClick={() => { setViewMode('student-check'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'student-check' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><UserCheck className="w-5 h-5 mr-3" /> Salida/Retorno</button>
                 <button onClick={() => { setViewMode('qr-access'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'qr-access' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><QrCode className="w-5 h-5 mr-3" /> Acceso QR</button>
+                <button onClick={() => { setViewMode('qr-scanner'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'qr-scanner' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><Scan className="w-5 h-5 mr-3" /> Escáner QR</button>
                 <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Herramientas</div>
                 <label className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-indigo-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all"><FileUp className="w-5 h-5 mr-3" /> Actualizar Excel<input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} /></label>
                 <button onClick={() => { setShowHistoryDeleteConfirm(true); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all"><Trash2 className="w-5 h-5 mr-3" /> Borrar Reportes</button>
@@ -685,27 +686,30 @@ const App: React.FC = () => {
                 {viewMode === 'directory' ? 'Estudiantes orquesta' : 'InventarioWT'}
               </h1>
             </div>
-            {viewMode === 'list' && (
-              <button
-                onClick={() => setShowInventoryForm(true)}
-                className="bg-indigo-600 px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black text-white uppercase flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 mr-2"
-              >
-                <Music className="w-4 h-4" /> <span className="hidden sm:inline">Añadir Instrumento</span>
-              </button>
-            )}
-            {data.length > 0 && (
-              <button
-                onClick={() => {
-                  const ws = XLSX.utils.json_to_sheet(data);
-                  const wb = XLSX.utils.book_new();
-                  XLSX.utils.book_append_sheet(wb, ws, "Inventario");
-                  XLSX.writeFile(wb, "Inventario.xlsx");
-                }}
-                className="bg-emerald-600 px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black text-white uppercase flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
-              >
-                <Save className="w-4 h-4" /> <span className="hidden sm:inline">Exportar</span>
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {data.length > 0 && <OverdueBadge inventory={data} onClick={() => setShowOverdueAlerts(true)} />}
+              {viewMode === 'list' && (
+                <button
+                  onClick={() => setShowInventoryForm(true)}
+                  className="bg-indigo-600 px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black text-white uppercase flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+                >
+                  <Music className="w-4 h-4" /> <span className="hidden sm:inline">Añadir Instrumento</span>
+                </button>
+              )}
+              {data.length > 0 && (
+                <button
+                  onClick={() => {
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+                    XLSX.writeFile(wb, "Inventario.xlsx");
+                  }}
+                  className="bg-emerald-600 px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black text-white uppercase flex items-center gap-2 hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  <Save className="w-4 h-4" /> <span className="hidden sm:inline">Exportar</span>
+                </button>
+              )}
+            </div>
           </header>
         )}
 
@@ -713,10 +717,24 @@ const App: React.FC = () => {
           <InventoryForm 
             onClose={() => setShowInventoryForm(false)} 
             onSave={(newItem) => {
-              // The Realtime listener will handle the global state update
-              // but we can update locally for immediate feedback if desired
               setData(prev => [...prev, newItem]);
             }} 
+          />
+        )}
+
+        {selectedInstrument && (
+          <InstrumentDetail
+            item={selectedInstrument}
+            history={history}
+            onClose={() => setSelectedInstrument(null)}
+          />
+        )}
+
+        {showOverdueAlerts && (
+          <OverdueAlerts
+            inventory={data}
+            onClose={() => setShowOverdueAlerts(false)}
+            onSelectItem={(item) => { setShowOverdueAlerts(false); setSelectedInstrument(item); }}
           />
         )}
 
@@ -753,13 +771,14 @@ const App: React.FC = () => {
               {viewMode === 'directory' && <DirectoryView />}
               {viewMode === 'reports' && <ReportsView history={history} onClearHistory={() => setShowHistoryDeleteConfirm(true)} />}
               {viewMode === 'qr-access' && <QRAccessView />}
+              {viewMode === 'qr-scanner' && <QRScannerView inventory={data} onViewInstrument={(item) => setSelectedInstrument(item)} />}
               {(['list', 'monitor-detail', 'loaned-detail', 'repair-detail', 'regular-detail', 'bueno-detail'].includes(viewMode)) && (
                 <div className="bg-slate-900/20 border border-slate-900 rounded-[3rem] overflow-hidden shadow-2xl">
                   <div className="p-10 border-b border-slate-900 flex items-center gap-6">
                     {viewMode !== 'list' && <button onClick={() => setViewMode('dashboard')} className="p-3 bg-slate-950 rounded-full"><ArrowLeft /></button>}
                     <div className="relative flex-1"><Search className="absolute left-6 top-1/2 -translate-y-1/2" /><input type="text" placeholder="Buscar..." className="w-full pl-16 pr-8 py-4 bg-[#020617] border-2 border-slate-900 rounded-full text-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
                   </div>
-                  <InventoryTable data={filteredData} />
+                  <InventoryTable data={filteredData} onItemClick={(item) => setSelectedInstrument(item)} />
                 </div>
               )}
             </>
