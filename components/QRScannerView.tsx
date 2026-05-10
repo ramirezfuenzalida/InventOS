@@ -279,9 +279,9 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-8 animate-in fade-in duration-700">
       {/* Tabs */}
-      <div className="bg-slate-900/40 border border-slate-800 rounded-[2rem] p-2 flex gap-2">
+      <div className="bg-slate-900/40 border border-slate-800 rounded-2xl sm:rounded-[2rem] p-1.5 sm:p-2 flex gap-1.5 sm:gap-2">
         {[
           { id: 'scanner' as ScanTab, label: 'Escáner', icon: Scan },
           { id: 'control' as ScanTab, label: 'Control', icon: Package, badge: scannedIds.size > 0 ? `${scannedIds.size}/${inventory.length}` : undefined },
@@ -290,7 +290,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); if (tab.id !== 'scanner') stopScanner(); }}
-            className={`flex-1 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+            className={`flex-1 py-3 sm:py-4 rounded-xl sm:rounded-[1.5rem] text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest flex items-center justify-center gap-1.5 sm:gap-2 transition-all ${
               activeTab === tab.id
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                 : 'text-slate-600 hover:text-slate-400'
@@ -307,9 +307,9 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
 
       {/* Banner de sesión activa */}
       {activeSession && (
-        <div className="bg-indigo-600/5 border border-indigo-500/20 rounded-[2rem] p-5 flex items-center gap-4">
-          <div className="w-10 h-10 bg-indigo-600/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Save className="w-5 h-5 text-indigo-400" />
+        <div className="bg-indigo-600/5 border border-indigo-500/20 rounded-2xl sm:rounded-[2rem] p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-600/10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+            <Save className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-bold uppercase truncate">{activeSession.name}</p>
@@ -328,9 +328,9 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
 
       {/* Si no hay sesión activa, mostrar selector */}
       {!activeSession && (
-        <div className="bg-slate-900/40 border border-slate-800 rounded-[3rem] p-8 md:p-12 space-y-6">
+        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl sm:rounded-[3rem] p-5 sm:p-8 md:p-12 space-y-5 sm:space-y-6">
           <div className="text-center">
-            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">
+            <h2 className="text-xl sm:text-2xl font-black text-white italic uppercase tracking-tighter mb-2">
               Iniciar <span className="text-indigo-500">Sesión de Control</span>
             </h2>
             <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
@@ -339,19 +339,19 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
           </div>
 
           {/* Crear nueva */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={sessionName}
               onChange={(e) => setSessionName(e.target.value)}
               placeholder={`Inventario ${new Date().toLocaleDateString('es-CL')}`}
-              className="flex-1 bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-2xl py-4 px-6 text-white font-bold text-sm outline-none transition-all"
+              className="flex-1 bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-xl sm:rounded-2xl py-3 sm:py-4 px-4 sm:px-6 text-white font-bold text-sm outline-none transition-all"
             />
             <button
               onClick={() => createSession(sessionName || undefined)}
-              className="bg-indigo-600 px-8 py-4 rounded-2xl font-black text-xs text-white uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+              className="bg-indigo-600 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs text-white uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
             >
-              <Save className="w-4 h-4" /> Nueva
+              <Save className="w-4 h-4" /> Nueva Sesión
             </button>
           </div>
 
@@ -362,37 +362,37 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
               {sessions.map(session => (
                 <div
                   key={session.id}
-                  className="bg-[#020617] border border-white/5 p-5 rounded-2xl flex items-center gap-4 hover:border-indigo-500/20 transition-all group"
+                  className="bg-[#020617] border border-white/5 p-4 sm:p-5 rounded-xl sm:rounded-2xl space-y-3 hover:border-indigo-500/20 transition-all group"
                 >
-                  <div className="w-12 h-12 bg-indigo-600/10 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
-                    <span className="text-lg font-black text-indigo-400 leading-none">{session.scannedIds.length}</span>
-                    <span className="text-[7px] font-black text-indigo-600">/{session.totalAtCreation}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-bold uppercase truncate">{session.name}</p>
-                    <div className="flex gap-3 mt-1">
-                      <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest flex items-center gap-1">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600/10 rounded-lg sm:rounded-xl flex flex-col items-center justify-center flex-shrink-0">
+                      <span className="text-base sm:text-lg font-black text-indigo-400 leading-none">{session.scannedIds.length}</span>
+                      <span className="text-[7px] font-black text-indigo-600">/{session.totalAtCreation}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-xs sm:text-sm font-bold uppercase truncate">{session.name}</p>
+                      <span className="text-[8px] sm:text-[9px] font-bold text-slate-600 uppercase tracking-widest flex items-center gap-1 mt-1">
                         <Calendar className="w-3 h-3" /> {formatDate(session.createdAt)}
                       </span>
                     </div>
-                    {/* Mini barra de progreso */}
-                    <div className="h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-indigo-600 to-emerald-500 rounded-full"
-                        style={{ width: `${session.totalAtCreation > 0 ? (session.scannedIds.length / session.totalAtCreation) * 100 : 0}%` }}
-                      />
-                    </div>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  {/* Mini barra de progreso */}
+                  <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-600 to-emerald-500 rounded-full"
+                      style={{ width: `${session.totalAtCreation > 0 ? (session.scannedIds.length / session.totalAtCreation) * 100 : 0}%` }}
+                    />
+                  </div>
+                  <div className="flex gap-2">
                     <button
                       onClick={() => resumeSession(session)}
-                      className="bg-emerald-600 px-4 py-2 rounded-xl font-black text-[9px] text-white uppercase tracking-widest hover:bg-emerald-500 transition-all"
+                      className="flex-1 bg-emerald-600 px-4 py-2.5 rounded-lg sm:rounded-xl font-black text-[9px] text-white uppercase tracking-widest hover:bg-emerald-500 transition-all text-center"
                     >
                       Continuar
                     </button>
                     <button
                       onClick={() => deleteSession(session.id)}
-                      className="p-2 rounded-xl text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+                      className="p-2.5 rounded-lg sm:rounded-xl text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -406,10 +406,10 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
 
       {/* ── TAB: ESCÁNER ── */}
       {activeTab === 'scanner' && (
-        <div className="bg-slate-900/40 border border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl">
-          <div className="p-8 md:p-12 space-y-8">
+        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl sm:rounded-[3rem] overflow-hidden shadow-2xl">
+          <div className="p-5 sm:p-8 md:p-12 space-y-5 sm:space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-2">
+              <h2 className="text-2xl sm:text-3xl font-black text-white italic uppercase tracking-tighter mb-2">
                 Verificar <span className="text-indigo-500">Instrumento</span>
               </h2>
               <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
@@ -418,8 +418,8 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
             </div>
 
             {/* Visor de cámara */}
-            <div className="relative rounded-[2rem] overflow-hidden bg-slate-950 border-2 border-slate-800">
-              <div id="qr-reader" className="w-full" style={{ minHeight: '300px' }} />
+            <div className="relative rounded-xl sm:rounded-[2rem] overflow-hidden bg-slate-950 border-2 border-slate-800">
+              <div id="qr-reader" className="w-full" style={{ minHeight: '260px' }} />
 
               {!isScanning && !scanResult && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
@@ -451,13 +451,13 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
 
             {/* Resultado del escaneo */}
             {scanResult && (
-              <div className={`p-8 rounded-[2.5rem] border-2 animate-in zoom-in-95 duration-300 ${
+              <div className={`p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border-2 animate-in zoom-in-95 duration-300 ${
                 scanResult.found
                   ? 'bg-emerald-600/5 border-emerald-500/20'
                   : 'bg-rose-600/5 border-rose-500/20'
               }`}>
-                <div className="flex items-center gap-6 mb-6">
-                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center ${
+                <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+                  <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[1.5rem] flex items-center justify-center flex-shrink-0 ${
                     scanResult.found ? 'bg-emerald-500/10' : 'bg-rose-500/10'
                   }`}>
                     {scanResult.found
@@ -466,7 +466,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                     }
                   </div>
                   <div>
-                    <h3 className={`text-2xl font-black uppercase italic tracking-tighter ${
+                    <h3 className={`text-lg sm:text-2xl font-black uppercase italic tracking-tighter ${
                       scanResult.found ? 'text-emerald-500' : 'text-rose-500'
                     }`}>
                       {scanResult.found ? '✅ EN INVENTARIO' : '❌ NO ENCONTRADO'}
@@ -478,7 +478,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                 </div>
 
                 {scanResult.found && scanResult.item && (
-                  <div className="bg-[#020617] p-6 rounded-[2rem] border border-white/5 space-y-3">
+                  <div className="bg-[#020617] p-4 sm:p-6 rounded-xl sm:rounded-[2rem] border border-white/5 space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Instrumento</p>
@@ -515,7 +515,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                 <div className="flex gap-4 mt-6">
                   <button
                     onClick={() => { setScanResult(null); startScanner(); }}
-                    className="flex-1 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
                   >
                     <Scan className="w-4 h-4" /> ESCANEAR OTRO
                   </button>
@@ -548,10 +548,10 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
 
       {/* ── TAB: CONTROL DE PRESENCIA ── */}
       {activeTab === 'control' && (
-        <div className="bg-slate-900/40 border border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl">
-          <div className="p-8 md:p-12 space-y-8">
+        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl sm:rounded-[3rem] overflow-hidden shadow-2xl">
+          <div className="p-5 sm:p-8 md:p-12 space-y-5 sm:space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-2">
+              <h2 className="text-2xl sm:text-3xl font-black text-white italic uppercase tracking-tighter mb-2">
                 Control de <span className="text-indigo-500">Presencia</span>
               </h2>
               <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
@@ -560,23 +560,23 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
             </div>
 
             {/* Estadísticas */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-[#020617] p-6 rounded-2xl border border-white/5 text-center">
-                <p className="text-3xl font-black text-white">{controlStats.total}</p>
-                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Total</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="bg-[#020617] p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-white/5 text-center">
+                <p className="text-2xl sm:text-3xl font-black text-white">{controlStats.total}</p>
+                <p className="text-[8px] sm:text-[9px] font-black text-slate-600 uppercase tracking-widest">Total</p>
               </div>
-              <div className="bg-emerald-600/5 p-6 rounded-2xl border border-emerald-500/20 text-center">
-                <p className="text-3xl font-black text-emerald-500">{controlStats.scanned.length}</p>
-                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Verificados</p>
+              <div className="bg-emerald-600/5 p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-emerald-500/20 text-center">
+                <p className="text-2xl sm:text-3xl font-black text-emerald-500">{controlStats.scanned.length}</p>
+                <p className="text-[8px] sm:text-[9px] font-black text-emerald-600 uppercase tracking-widest">Verificados</p>
               </div>
-              <div className="bg-rose-600/5 p-6 rounded-2xl border border-rose-500/20 text-center">
-                <p className="text-3xl font-black text-rose-500">{controlStats.missing.length}</p>
-                <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Faltan</p>
+              <div className="bg-rose-600/5 p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-rose-500/20 text-center">
+                <p className="text-2xl sm:text-3xl font-black text-rose-500">{controlStats.missing.length}</p>
+                <p className="text-[8px] sm:text-[9px] font-black text-rose-600 uppercase tracking-widest">Faltan</p>
               </div>
             </div>
 
             {/* Barra de progreso */}
-            <div className="bg-[#020617] p-4 rounded-2xl border border-white/5">
+            <div className="bg-[#020617] p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/5">
               <div className="flex justify-between mb-2">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Progreso</span>
                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
@@ -592,18 +592,18 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
             </div>
 
             {/* Acciones */}
-            <div className="flex gap-4">
+            <div className="flex gap-2 sm:gap-4">
               <button
                 onClick={() => { setActiveTab('scanner'); startScanner(); }}
-                className="flex-1 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
               >
                 <Scan className="w-4 h-4" /> Escanear
               </button>
               <button
                 onClick={() => setShowSessionManager(true)}
-                className="py-5 px-6 rounded-[2rem] font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-white/5 transition-all border border-white/5 flex items-center gap-2"
+                className="py-4 sm:py-5 px-4 sm:px-6 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest text-slate-400 hover:bg-white/5 transition-all border border-white/5 flex items-center gap-1.5 sm:gap-2"
               >
-                <FolderOpen className="w-4 h-4" /> Sesiones
+                <FolderOpen className="w-4 h-4" /> <span className="hidden sm:inline">Sesiones</span>
               </button>
               <button
                 onClick={() => {
@@ -611,7 +611,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                     setScannedIds(new Set());
                   }
                 }}
-                className="py-5 px-6 rounded-[2rem] font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-white/5 transition-all border border-white/5 flex items-center gap-2"
+                className="py-4 sm:py-5 px-4 sm:px-6 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-white/5 transition-all border border-white/5 flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -627,7 +627,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                   {controlStats.missing.map(item => (
                     <div
                       key={String(item.id)}
-                      className="bg-slate-900/60 border border-white/5 p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-slate-800/60 transition-all"
+                      className="bg-slate-900/60 border border-white/5 p-3 sm:p-4 rounded-lg sm:rounded-xl flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-slate-800/60 transition-all"
                       onClick={() => onViewInstrument?.(item)}
                     >
                       <Music className="w-5 h-5 text-rose-500/50 flex-shrink-0" />
@@ -653,10 +653,10 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
 
       {/* ── TAB: GENERAR ETIQUETAS QR ── */}
       {activeTab === 'generate' && (
-        <div className="bg-slate-900/40 border border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl">
-          <div className="p-8 md:p-12 space-y-8">
+        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl sm:rounded-[3rem] overflow-hidden shadow-2xl">
+          <div className="p-5 sm:p-8 md:p-12 space-y-5 sm:space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-2">
+              <h2 className="text-2xl sm:text-3xl font-black text-white italic uppercase tracking-tighter mb-2">
                 Etiquetas <span className="text-indigo-500">QR</span>
               </h2>
               <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
