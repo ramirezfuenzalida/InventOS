@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Scan, CheckCircle, XCircle, AlertTriangle, Music, User, RotateCcw, Printer, X, Camera, List, Search, Package, Save, FolderOpen, Trash2, Clock, Calendar } from 'lucide-react';
+import { Scan, CheckCircle, XCircle, AlertTriangle, Music, User, RotateCcw, Printer, X, Camera, List, Search, Package, Save, FolderOpen, Trash2, Clock, Calendar, Cloud, CloudOff, Loader2 } from 'lucide-react';
 import QRCodeLib from 'qrcode';
 import { InventoryItem } from '../types.ts';
 import { globalNormalize, getEstadoCategoria, isItemLoaned } from '../utils.ts';
+import { supabase } from '../supabaseClient.ts';
 
 interface QRScannerViewProps {
   inventory: InventoryItem[];
@@ -28,7 +29,7 @@ const parseQRText = (text: string): { id: string; serie: string; instrumento: st
   return { id: '', serie: text.trim(), instrumento: text.trim() };
 };
 
-const STORAGE_KEY = 'oswt_scan_sessions';
+const STORAGE_KEY = 'oswt_active_session';
 
 interface ScanSession {
   id: string;
@@ -38,17 +39,6 @@ interface ScanSession {
   scannedIds: string[];
   totalAtCreation: number;
 }
-
-const loadSessions = (): ScanSession[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-};
-
-const saveSessions = (sessions: ScanSession[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-};
 
 const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrument }) => {
   const [activeTab, setActiveTab] = useState<ScanTab>('scanner');
@@ -61,73 +51,141 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   const scannerRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // ── SESIONES PERSISTENTES ──
-  const [sessions, setSessions] = useState<ScanSession[]>(loadSessions);
+  // ── SESIONES PERSISTENTES EN SUPABASE ──
+  const [sessions, setSessions] = useState<ScanSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [showSessionManager, setShowSessionManager] = useState(false);
   const [sessionName, setSessionName] = useState('');
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cargar sesión activa desde localStorage al iniciar
+  // Cargar sesiones desde Supabase al montar
   useEffect(() => {
-    const lastActive = localStorage.getItem('oswt_active_session');
-    if (lastActive) {
-      const session = sessions.find(s => s.id === lastActive);
-      if (session) {
-        setActiveSessionId(session.id);
-        setScannedIds(new Set(session.scannedIds));
+    const fetchSessions = async () => {
+      setIsLoadingSessions(true);
+      const { data, error } = await supabase
+        .from('scan_sessions')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (!error && data) {
+        const mapped: ScanSession[] = data.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          scannedIds: row.scanned_ids || [],
+          totalAtCreation: row.total_at_creation || 0,
+        }));
+        setSessions(mapped);
+
+        // Restaurar sesión activa desde localStorage (solo el ID activo se guarda local)
+        const lastActive = localStorage.getItem(STORAGE_KEY);
+        if (lastActive) {
+          const session = mapped.find(s => s.id === lastActive);
+          if (session) {
+            setActiveSessionId(session.id);
+            setScannedIds(new Set(session.scannedIds));
+          }
+        }
       }
-    }
+      setIsLoadingSessions(false);
+    };
+    fetchSessions();
   }, []);
 
-  // Auto-guardar cada vez que cambian los IDs escaneados
+  // Auto-guardar en Supabase con debounce de 1s
   useEffect(() => {
     if (!activeSessionId || scannedIds.size === 0) return;
-    const updated = sessions.map(s => {
+
+    // Actualizar estado local inmediatamente
+    setSessions(prev => prev.map(s => {
       if (s.id === activeSessionId) {
         return { ...s, scannedIds: Array.from(scannedIds), updatedAt: new Date().toISOString() };
       }
       return s;
-    });
-    setSessions(updated);
-    saveSessions(updated);
+    }));
+
+    // Debounce la escritura a Supabase
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      setIsSaving(true);
+      await supabase
+        .from('scan_sessions')
+        .update({
+          scanned_ids: Array.from(scannedIds),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', activeSessionId);
+      setIsSaving(false);
+    }, 1000);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [scannedIds, activeSessionId]);
 
-  const createSession = (name?: string) => {
+  const createSession = async (name?: string) => {
     const now = new Date();
     const sessionId = `session_${now.getTime()}`;
-    const newSession: ScanSession = {
+    const sessionLabel = name || `Inventario ${now.toLocaleDateString('es-CL')}`;
+
+    const { error } = await supabase.from('scan_sessions').insert({
       id: sessionId,
-      name: name || `Inventario ${now.toLocaleDateString('es-CL')}`,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-      scannedIds: [],
-      totalAtCreation: inventory.length,
-    };
-    const updated = [newSession, ...sessions];
-    setSessions(updated);
-    saveSessions(updated);
-    setActiveSessionId(sessionId);
-    setScannedIds(new Set());
-    localStorage.setItem('oswt_active_session', sessionId);
-    setShowSessionManager(false);
-    setSessionName('');
+      name: sessionLabel,
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      scanned_ids: [],
+      total_at_creation: inventory.length,
+    });
+
+    if (!error) {
+      const newSession: ScanSession = {
+        id: sessionId,
+        name: sessionLabel,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+        scannedIds: [],
+        totalAtCreation: inventory.length,
+      };
+      setSessions(prev => [newSession, ...prev]);
+      setActiveSessionId(sessionId);
+      setScannedIds(new Set());
+      localStorage.setItem(STORAGE_KEY, sessionId);
+      setShowSessionManager(false);
+      setSessionName('');
+    }
   };
 
-  const resumeSession = (session: ScanSession) => {
-    setActiveSessionId(session.id);
-    setScannedIds(new Set(session.scannedIds));
-    localStorage.setItem('oswt_active_session', session.id);
+  const resumeSession = async (session: ScanSession) => {
+    // Recargar datos frescos de Supabase para tener la última versión
+    const { data } = await supabase
+      .from('scan_sessions')
+      .select('*')
+      .eq('id', session.id)
+      .single();
+
+    if (data) {
+      const freshIds = data.scanned_ids || [];
+      setActiveSessionId(session.id);
+      setScannedIds(new Set(freshIds));
+      setSessions(prev => prev.map(s => s.id === session.id ? { ...s, scannedIds: freshIds, updatedAt: data.updated_at } : s));
+    } else {
+      setActiveSessionId(session.id);
+      setScannedIds(new Set(session.scannedIds));
+    }
+    localStorage.setItem(STORAGE_KEY, session.id);
     setShowSessionManager(false);
   };
 
-  const deleteSession = (sessionId: string) => {
-    const updated = sessions.filter(s => s.id !== sessionId);
-    setSessions(updated);
-    saveSessions(updated);
+  const deleteSession = async (sessionId: string) => {
+    await supabase.from('scan_sessions').delete().eq('id', sessionId);
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
     if (activeSessionId === sessionId) {
       setActiveSessionId(null);
       setScannedIds(new Set());
-      localStorage.removeItem('oswt_active_session');
+      localStorage.removeItem(STORAGE_KEY);
     }
   };
 
@@ -308,13 +366,16 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
       {/* Banner de sesión activa */}
       {activeSession && (
         <div className="bg-indigo-600/5 border border-indigo-500/20 rounded-2xl sm:rounded-[2rem] p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-600/10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-            <Save className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 ${isSaving ? 'bg-amber-500/10' : 'bg-emerald-500/10'}`}>
+            {isSaving
+              ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-spin" />
+              : <Cloud className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+            }
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-bold uppercase truncate">{activeSession.name}</p>
             <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">
-              {controlStats.scanned.length}/{controlStats.total} • Guardado: {formatDate(activeSession.updatedAt)}
+              {controlStats.scanned.length}/{controlStats.total} • {isSaving ? 'Guardando...' : '☁️ Sincronizado'}
             </p>
           </div>
           <button
@@ -326,8 +387,16 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
         </div>
       )}
 
+      {/* Cargando sesiones */}
+      {isLoadingSessions && !activeSession && (
+        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl sm:rounded-[3rem] p-8 flex flex-col items-center justify-center gap-4">
+          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Cargando sesiones...</p>
+        </div>
+      )}
+
       {/* Si no hay sesión activa, mostrar selector */}
-      {!activeSession && (
+      {!activeSession && !isLoadingSessions && (
         <div className="bg-slate-900/40 border border-slate-800 rounded-2xl sm:rounded-[3rem] p-5 sm:p-8 md:p-12 space-y-5 sm:space-y-6">
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl font-black text-white italic uppercase tracking-tighter mb-2">
