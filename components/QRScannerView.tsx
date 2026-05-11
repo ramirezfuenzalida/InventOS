@@ -1,10 +1,44 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Scan, CheckCircle, XCircle, AlertTriangle, Music, User, RotateCcw, Printer, X, Camera, List, Search, Package, Save, FolderOpen, Trash2, Clock, Calendar, Cloud, CloudOff, Loader2 } from 'lucide-react';
+import { Scan, CheckCircle, XCircle, AlertTriangle, Music, User, RotateCcw, Printer, X, Camera, List, Search, Package, Save, FolderOpen, Trash2, Clock, Calendar, Cloud, CloudOff, Loader2, FileDown } from 'lucide-react';
 import QRCodeLib from 'qrcode';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { InventoryItem } from '../types.ts';
 import { globalNormalize, getEstadoCategoria, isItemLoaned } from '../utils.ts';
 import { supabase } from '../supabaseClient.ts';
+
+/** Reproduce un sonido de beep usando Web Audio API */
+const playScanSound = (success: boolean) => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (success) {
+      // Beep agudo corto — éxito
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+      oscillator.frequency.setValueAtTime(1320, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.2);
+    } else {
+      // Buzz grave — error
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(220, ctx.currentTime);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.35);
+    }
+  } catch (e) {
+    // Web Audio API no disponible — silencioso
+  }
+};
 
 interface QRScannerViewProps {
   inventory: InventoryItem[];
@@ -266,9 +300,135 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
     if (found) {
       setScanResult({ found: true, item: found, raw: rawText });
       setScannedIds(prev => new Set(prev).add(String(found.id)));
+      playScanSound(true);
     } else {
       setScanResult({ found: false, raw: rawText });
+      playScanSound(false);
     }
+  };
+
+  /** Genera PDF del inventario completado */
+  const generateInventoryPDF = () => {
+    const doc = new jsPDF('p', 'mm', 'letter');
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+
+    // ── Encabezado ──
+    doc.setFillColor(15, 23, 42); // slate-900
+    doc.rect(0, 0, 216, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVENTARIO FÍSICO — OSWT', 15, 18);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Orquesta Sinfónica William Taylor`, 15, 26);
+    doc.setTextColor(148, 163, 184); // slate-400
+    doc.setFontSize(9);
+    doc.text(`Fecha: ${dateStr} • Hora: ${timeStr}`, 15, 34);
+    if (activeSession) {
+      doc.text(`Sesión: ${activeSession.name}`, 130, 34);
+    }
+
+    // ── Resumen ──
+    const yStart = 50;
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RESUMEN', 15, yStart);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Total instrumentos: ${controlStats.total}`, 15, yStart + 8);
+    doc.text(`Verificados (presentes): ${controlStats.scanned.length}`, 15, yStart + 14);
+    doc.text(`No verificados: ${controlStats.missing.length}`, 15, yStart + 20);
+
+    const percent = controlStats.total > 0 ? Math.round((controlStats.scanned.length / controlStats.total) * 100) : 0;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(percent === 100 ? 34 : 220, percent === 100 ? 197 : 38, percent === 100 ? 94 : 38);
+    doc.text(`Completado: ${percent}%`, 130, yStart + 8);
+
+    // ── Tabla de instrumentos verificados ──
+    const tableY = yStart + 30;
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INSTRUMENTOS VERIFICADOS EN SALA', 15, tableY);
+
+    const tableData = controlStats.scanned.map((item, idx) => [
+      String(idx + 1),
+      item.Instrumento || '—',
+      item.Marca || '—',
+      item.Modelo || '—',
+      item.Serie || '—',
+      item.Estado || '—',
+      item.Estudiante || 'Sin asignar',
+    ]);
+
+    autoTable(doc, {
+      startY: tableY + 4,
+      head: [['#', 'Instrumento', 'Marca', 'Modelo', 'Serie', 'Estado', 'Estudiante']],
+      body: tableData,
+      styles: { fontSize: 7, cellPadding: 2, font: 'helvetica' },
+      headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [241, 245, 249] },
+      columnStyles: {
+        0: { cellWidth: 8, halign: 'center' },
+        1: { cellWidth: 30 },
+        4: { cellWidth: 25 },
+      },
+      margin: { left: 15, right: 15 },
+    });
+
+    // ── Si hay faltantes, agregar tabla ──
+    if (controlStats.missing.length > 0) {
+      const finalY = (doc as any).lastAutoTable?.finalY || 200;
+      if (finalY > 240) doc.addPage();
+      const missingY = finalY > 240 ? 20 : finalY + 12;
+
+      doc.setTextColor(220, 38, 38);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`INSTRUMENTOS NO VERIFICADOS (${controlStats.missing.length})`, 15, missingY);
+
+      const missingData = controlStats.missing.map((item, idx) => [
+        String(idx + 1),
+        item.Instrumento || '—',
+        item.Marca || '—',
+        item.Modelo || '—',
+        item.Serie || '—',
+        item.Estudiante || 'Sin asignar',
+        isItemLoaned(item) ? 'HOGAR' : 'SALA',
+      ]);
+
+      autoTable(doc, {
+        startY: missingY + 4,
+        head: [['#', 'Instrumento', 'Marca', 'Modelo', 'Serie', 'Estudiante', 'Ubic.']],
+        body: missingData,
+        styles: { fontSize: 7, cellPadding: 2, font: 'helvetica' },
+        headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold', fontSize: 7 },
+        alternateRowStyles: { fillColor: [254, 242, 242] },
+        columnStyles: {
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 30 },
+        },
+        margin: { left: 15, right: 15 },
+      });
+    }
+
+    // ── Pie de página ──
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`OSWT App — Inventario Físico — Página ${i}/${pageCount}`, 15, 272);
+      doc.text(`Generado: ${dateStr} ${timeStr}`, 150, 272);
+    }
+
+    doc.save(`Inventario_OSWT_${now.toISOString().slice(0, 10)}.pdf`);
   };
 
   // ── GENERADOR DE QR ──
@@ -689,6 +849,24 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                 <RotateCcw className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Botón Exportar PDF — visible cuando hay escaneos */}
+            {controlStats.scanned.length > 0 && (
+              <button
+                onClick={generateInventoryPDF}
+                className={`w-full py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                  controlStats.missing.length === 0
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 animate-pulse'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-white/5'
+                }`}
+              >
+                <FileDown className="w-4 h-4" />
+                {controlStats.missing.length === 0
+                  ? `✅ Inventario Completo — Exportar PDF (${controlStats.total}/${controlStats.total})`
+                  : `Exportar PDF Parcial (${controlStats.scanned.length}/${controlStats.total})`
+                }
+              </button>
+            )}
 
             {/* Lista de faltantes */}
             {controlStats.missing.length > 0 && controlStats.scanned.length > 0 && (
