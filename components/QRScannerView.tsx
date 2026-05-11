@@ -88,6 +88,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   // ── SESIONES PERSISTENTES EN SUPABASE ──
   const [sessions, setSessions] = useState<ScanSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [controlListFilter, setControlListFilter] = useState<'missing' | 'scanned'>('missing');
   const [showSessionManager, setShowSessionManager] = useState(false);
   const [sessionName, setSessionName] = useState('');
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
@@ -867,20 +868,47 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
               }
             </button>
 
-            {/* Lista de faltantes */}
-            {controlStats.missing.length > 0 && controlStats.scanned.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-rose-400 text-[10px] font-black uppercase tracking-[0.3em]">
-                  ⚠️ Instrumentos no verificados ({controlStats.missing.length})
-                </p>
+            {/* Listas de Instrumentos */}
+            {controlStats.total > 0 && (
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <div className="flex bg-[#020617] p-1 rounded-xl sm:rounded-2xl border border-white/5">
+                  <button
+                    onClick={() => setControlListFilter('missing')}
+                    className={`flex-1 py-3 sm:py-4 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${
+                      controlListFilter === 'missing'
+                        ? 'bg-rose-500/10 text-rose-500 shadow-lg'
+                        : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Faltan ({controlStats.missing.length})
+                  </button>
+                  <button
+                    onClick={() => setControlListFilter('scanned')}
+                    className={`flex-1 py-3 sm:py-4 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${
+                      controlListFilter === 'scanned'
+                        ? 'bg-emerald-500/10 text-emerald-500 shadow-lg'
+                        : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Verificados ({controlStats.scanned.length})
+                  </button>
+                </div>
+
                 <div className="max-h-[400px] overflow-y-auto space-y-2 custom-scrollbar">
-                  {controlStats.missing.map(item => (
+                  {(controlListFilter === 'missing' ? controlStats.missing : controlStats.scanned).map(item => (
                     <div
                       key={String(item.id)}
-                      className="bg-slate-900/60 border border-white/5 p-3 sm:p-4 rounded-lg sm:rounded-xl flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-slate-800/60 transition-all"
+                      className={`bg-slate-900/60 border p-3 sm:p-4 rounded-lg sm:rounded-xl flex items-center gap-3 sm:gap-4 cursor-pointer transition-all ${
+                        controlListFilter === 'missing'
+                          ? 'border-rose-500/10 hover:bg-rose-500/5'
+                          : 'border-emerald-500/10 hover:bg-emerald-500/5'
+                      }`}
                       onClick={() => onViewInstrument?.(item)}
                     >
-                      <Music className="w-5 h-5 text-rose-500/50 flex-shrink-0" />
+                      {controlListFilter === 'missing' 
+                        ? <AlertTriangle className="w-5 h-5 text-rose-500/50 flex-shrink-0" />
+                        : <CheckCircle className="w-5 h-5 text-emerald-500/50 flex-shrink-0" />
+                      }
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-xs font-bold uppercase truncate">{item.Instrumento} — {item.Marca} {item.Modelo}</p>
                         <p className="text-slate-600 text-[9px] font-bold uppercase tracking-widest">
@@ -894,6 +922,19 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                       </span>
                     </div>
                   ))}
+                  
+                  {controlListFilter === 'missing' && controlStats.missing.length === 0 && (
+                    <div className="text-center py-8">
+                      <CheckCircle className="w-12 h-12 text-emerald-500/20 mx-auto mb-3" />
+                      <p className="text-emerald-500/50 text-xs font-black uppercase tracking-widest">¡Inventario completo!</p>
+                    </div>
+                  )}
+                  {controlListFilter === 'scanned' && controlStats.scanned.length === 0 && (
+                    <div className="text-center py-8">
+                      <Scan className="w-12 h-12 text-slate-500/20 mx-auto mb-3" />
+                      <p className="text-slate-500/50 text-xs font-black uppercase tracking-widest">Aún no hay escaneos</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
