@@ -850,23 +850,22 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
               </button>
             </div>
 
-            {/* Botón Exportar PDF — visible cuando hay escaneos */}
-            {controlStats.scanned.length > 0 && (
-              <button
-                onClick={generateInventoryPDF}
-                className={`w-full py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                  controlStats.missing.length === 0
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 animate-pulse'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-white/5'
-                }`}
-              >
-                <FileDown className="w-4 h-4" />
-                {controlStats.missing.length === 0
-                  ? `✅ Inventario Completo — Exportar PDF (${controlStats.total}/${controlStats.total})`
-                  : `Exportar PDF Parcial (${controlStats.scanned.length}/${controlStats.total})`
-                }
-              </button>
-            )}
+            {/* Botón Exportar PDF — visible siempre, activo al finalizar */}
+            <button
+              onClick={generateInventoryPDF}
+              disabled={controlStats.missing.length > 0 || controlStats.total === 0}
+              className={`w-full py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                controlStats.missing.length === 0 && controlStats.total > 0
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 animate-pulse'
+                  : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+              }`}
+            >
+              <FileDown className="w-4 h-4" />
+              {controlStats.missing.length === 0 && controlStats.total > 0
+                ? `✅ Inventario Completo — Exportar PDF (${controlStats.total}/${controlStats.total})`
+                : `Exportar PDF (Faltan ${controlStats.missing.length})`
+              }
+            </button>
 
             {/* Lista de faltantes */}
             {controlStats.missing.length > 0 && controlStats.scanned.length > 0 && (
