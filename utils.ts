@@ -20,11 +20,21 @@ export const getEstadoCategoria = (val: string): 'BUENO' | 'REGULAR' | 'MALO' =>
 
 export const inferFamilia = (instrumento: string): string => {
     const s = globalNormalize(instrumento);
-    if (s.includes('violin') || s.includes('viola')) return 'VIOLINES Y VIOLAS';
-    if (s.includes('cello') || s.includes('contrabajo') || s.includes('violoncell')) return 'CELLOS Y CONTRABAJOS';
-    if (s.includes('corno') || s.includes('trompeta') || s.includes('trombon') || s.includes('tuba') || s.includes('eufonio')) return 'VIENTOS BRONCE';
-    if (s.includes('clarinete') || s.includes('flauta') || s.includes('oboe') || s.includes('fagot') || s.includes('piccolo')) return 'VIENTOS MADERA';
-    if (s.includes('percusion') || s.includes('timpani') || s.includes('bateria') || s.includes('bombo') || s.includes('tambor') || s.includes('xilofono')) return 'PERCUSIÓN';
+    
+    // Cuerdas Frotadas
+    if (s.includes('violin') || s.includes('viola')) return 'CUERDAS VIOLINES Y VIOLAS';
+    if (s.includes('cello') || s.includes('contrabajo') || s.includes('violoncell') || s.includes('violonchel')) return 'CUERDAS CELLOS Y CONTRABAJOS';
+    
+    // Vientos
+    if (s.includes('corno') || s.includes('trompeta') || s.includes('trombon') || s.includes('tuba') || s.includes('eufonio') || s.includes('bugle')) return 'VIENTOS BRONCE';
+    if (s.includes('clarinete') || s.includes('flauta') || s.includes('oboe') || s.includes('fagot') || s.includes('piccolo') || s.includes('saxo')) return 'VIENTOS MADERA';
+    
+    // Percusión
+    if (s.includes('percusion') || s.includes('timpani') || s.includes('bateria') || s.includes('bombo') || s.includes('tambor') || s.includes('xilofono') || s.includes('metalofono') || s.includes('glockenspiel') || s.includes('platillo')) return 'PERCUSIÓN';
+    
+    // Otros / Teclados
+    if (s.includes('piano') || s.includes('teclado') || s.includes('acordeon')) return 'TECLADOS Y OTROS';
+    
     return 'OTROS';
 };
 

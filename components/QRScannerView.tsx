@@ -365,7 +365,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
       item.Modelo || '—',
       item.Serie || '—',
       item.Estado || '—',
-      item.Estudiante || 'Sin asignar',
+      item.Estudiante ? `${item.Estudiante} ${item.Curso ? `(${item.Curso})` : ''}` : 'Sin asignar',
     ]);
 
     autoTable(doc, {
@@ -400,7 +400,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
         item.Marca || '—',
         item.Modelo || '—',
         item.Serie || '—',
-        item.Estudiante || 'Sin asignar',
+        item.Estudiante ? `${item.Estudiante} ${item.Curso ? `(${item.Curso})` : ''}` : 'Sin asignar',
         isItemLoaned(item) ? 'HOGAR' : 'SALA',
       ]);
 
@@ -910,10 +910,19 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                         : <CheckCircle className="w-5 h-5 text-emerald-500/50 flex-shrink-0" />
                       }
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-bold uppercase truncate">{item.Instrumento} — {item.Marca} {item.Modelo}</p>
-                        <p className="text-slate-600 text-[9px] font-bold uppercase tracking-widest">
-                          {item.Estudiante || 'SIN ASIGNAR'} • S/N: {item.Serie || '—'}
-                        </p>
+                        <p className="text-white text-xs font-black uppercase truncate tracking-tight">{item.Instrumento} — {item.Marca} {item.Modelo}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md ${item.Estudiante ? 'bg-indigo-500/10 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
+                            <User className="w-2.5 h-2.5" />
+                            <span className="text-[8px] font-black uppercase tracking-widest">
+                              {item.Estudiante ? `${item.Estudiante} ${item.Curso ? `(${item.Curso})` : ''}` : 'SALA / DISPONIBLE'}
+                            </span>
+                          </div>
+                          <span className="text-slate-800 text-[10px]">•</span>
+                          <span className="text-slate-600 text-[9px] font-bold uppercase tracking-widest">
+                            S/N: {item.Serie || '—'}
+                          </span>
+                        </div>
                       </div>
                       <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${
                         isItemLoaned(item) ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-800 text-slate-500'
