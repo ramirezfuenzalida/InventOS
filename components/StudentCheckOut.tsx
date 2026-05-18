@@ -455,8 +455,8 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
 
           {/* ── PASO 3: Confirmar operación ── */}
           {selectedItem && (
-            <div className="space-y-10 animate-in zoom-in-95 duration-300">
-              <div className="bg-indigo-600/5 p-12 rounded-[3.5rem] border-2 border-indigo-500/20 relative">
+            <div className="space-y-6 md:space-y-10 animate-in zoom-in-95 duration-300">
+              <div className="bg-indigo-600/5 p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border-2 border-indigo-500/20 relative">
                 <button
                   type="button"
                   onClick={() => {
@@ -468,41 +468,41 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                       setSelectedStudent(null);
                     }
                   }}
-                  className="absolute top-8 right-8 p-4 bg-slate-900 rounded-[1.5rem] text-slate-500 hover:text-white transition-all shadow-xl"
+                  className="absolute top-4 right-4 md:top-8 md:right-8 p-3 md:p-4 bg-slate-900 rounded-[1.2rem] md:rounded-[1.5rem] text-slate-500 hover:text-white transition-all shadow-xl z-10"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
 
-                <div className="flex flex-col md:flex-row items-center gap-10">
-                  <div className="w-28 h-28 bg-slate-900 rounded-[2rem] flex items-center justify-center text-indigo-400 border border-white/5 shadow-inner">
-                    <User className="w-14 h-14" />
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10 mt-4 md:mt-0">
+                  <div className="w-20 h-20 md:w-28 md:h-28 bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center text-indigo-400 border border-white/5 shadow-inner flex-shrink-0">
+                    <User className="w-10 h-10 md:w-14 md:h-14" />
                   </div>
-                  <div className="text-center md:text-left flex-1">
-                    <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.4em] mb-3">RESUMEN DEL REGISTRO</p>
-                    <h3 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-none mb-6">
+                  <div className="text-center md:text-left flex-1 w-full min-w-0">
+                    <p className="text-indigo-400 font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] mb-2 md:mb-3">RESUMEN DEL REGISTRO</p>
+                    <h3 className="text-2xl sm:text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-tight md:leading-none mb-6 break-words">
                       {selectedStudent?.studentName || selectedItem.Estudiante || 'DISPONIBLE'}
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-[#020617] p-8 rounded-[2rem] border border-white/5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 bg-[#020617] p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-white/5 text-left w-full">
                       <div>
                         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Instrumento</p>
-                        <p className="text-white font-bold text-sm uppercase">{selectedItem.Instrumento}</p>
+                        <p className="text-white font-bold text-xs md:text-sm uppercase">{selectedItem.Instrumento}</p>
                       </div>
                       <div>
                         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Marca y Modelo</p>
-                        <p className="text-white font-bold text-sm uppercase">{selectedItem.Marca} {selectedItem.Modelo}</p>
+                        <p className="text-white font-bold text-xs md:text-sm uppercase">{selectedItem.Marca} {selectedItem.Modelo}</p>
                       </div>
                       <div>
                         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Curso</p>
-                        <p className="text-white font-bold text-sm uppercase">{selectedStudent?.course || selectedItem.Curso || 'SIN CURSO'}</p>
+                        <p className="text-white font-bold text-xs md:text-sm uppercase truncate">{selectedStudent?.course || selectedItem.Curso || 'SIN CURSO'}</p>
                       </div>
                       <div>
                         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Número de Serie</p>
-                        <p className="text-white font-bold text-sm uppercase">{selectedItem.Serie || 'S/N'}</p>
+                        <p className="text-white font-bold text-xs md:text-sm uppercase break-all">{selectedItem.Serie || 'S/N'}</p>
                       </div>
                       <div className="sm:col-span-2">
                         <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Ubicación Actual</p>
-                        <p className={`text-sm font-bold uppercase ${isItemLoaned(selectedItem) ? 'text-amber-500' : 'text-emerald-500'}`}>
+                        <p className={`text-xs md:text-sm font-bold uppercase ${isItemLoaned(selectedItem) ? 'text-amber-500' : 'text-emerald-500'}`}>
                           {selectedItem.Ubicacion || 'SALA DE MÚSICA'}
                         </p>
                       </div>
@@ -511,14 +511,14 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-1 space-y-3">
-                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em] ml-6">FECHA</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
+                <div className="md:col-span-1 space-y-2 md:space-y-3">
+                  <label className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] md:tracking-[0.4em] ml-4 md:ml-6">FECHA</label>
                   <div className="relative">
-                    <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-700" />
+                    <Calendar className="absolute left-5 md:left-6 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 text-slate-700" />
                     <input
                       type="date"
-                      className="w-full bg-[#020617] border-2 border-slate-900 rounded-[2rem] py-7 pl-16 pr-8 text-white font-black outline-none focus:border-indigo-500/50 transition-all shadow-xl"
+                      className="w-full bg-[#020617] border-2 border-slate-900 rounded-[1.5rem] md:rounded-[2rem] py-5 md:py-7 pl-14 md:pl-16 pr-6 md:pr-8 text-white font-black outline-none focus:border-indigo-500/50 transition-all shadow-xl text-sm md:text-base"
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
                     />
