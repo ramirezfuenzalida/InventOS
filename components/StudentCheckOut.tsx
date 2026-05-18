@@ -30,6 +30,7 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
   const [signatureData, setSignatureData] = useState<string | null>(null);
+  const [instrumentSearchTerm, setInstrumentSearchTerm] = useState('');
 
   // Normalización segura para búsqueda
   const safeNorm = (val: any): string => {
@@ -70,6 +71,24 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
         });
       }
     });
+
+    // Luego añadir los de availableStudents que no estén en groupMap
+    if (availableStudents) {
+      availableStudents.forEach(student => {
+        const rawName = (student.name || '').toString().trim();
+        if (!rawName) return;
+        const key = safeNorm(rawName);
+        if (!key) return;
+
+        if (!groupMap.has(key)) {
+          groupMap.set(key, {
+            studentName: rawName.toUpperCase(),
+            course: (student.course || '').toString().toUpperCase().trim() || 'SIN CURSO',
+            instruments: [] // Estudiante sin instrumento asignado aún
+          });
+        }
+      });
+    }
 
     return Array.from(groupMap.values()).sort((a, b) => a.studentName.localeCompare(b.studentName));
   }, [inventory]);
@@ -374,6 +393,75 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                     <ArrowRight className="w-6 h-6 text-slate-700 group-hover/inst:text-white transition-all" />
                   </button>
                 ))}
+
+                {mode === 'out' && selectedStudent.instruments.length === 0 && (
+                  <div className="space-y-6">
+                    <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+                      <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-4" />
+                      <p className="text-slate-300 font-black uppercase italic tracking-[0.2em] mb-2">
+                        Este estudiante no tiene instrumento asignado
+                      </p>
+                      <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+                        Busca y selecciona un instrumento disponible para asignarle:
+                      </p>
+                    </div>
+
+                    <div className="relative group">
+                      <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-700 group-focus-within:text-indigo-500 transition-colors" />
+                      <input
+                        type="text"
+                        className="w-full bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-[2rem] py-5 pl-16 pr-8 text-lg font-black text-white placeholder:text-slate-800 outline-none transition-all uppercase shadow-inner"
+                        placeholder="Buscar instrumento por nombre, marca o serie..."
+                        value={instrumentSearchTerm}
+                        onChange={(e) => setInstrumentSearchTerm(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {instrumentSearchTerm.length > 1 ? (
+                        inventory
+                          .filter(inst => !isItemLoaned(inst))
+                          .filter(inst => 
+                            safeNorm(inst.Instrumento).includes(safeNorm(instrumentSearchTerm)) ||
+                            safeNorm(inst.Marca).includes(safeNorm(instrumentSearchTerm)) ||
+                            safeNorm(inst.Serie).includes(safeNorm(instrumentSearchTerm))
+                          )
+                          .slice(0, 15)
+                          .map((inst) => (
+                            <button
+                              key={String(inst.id)}
+                              type="button"
+                              onClick={() => handleSelectInstrument(inst)}
+                              className="w-full bg-slate-900/40 border border-white/5 p-6 rounded-[2rem] flex items-center justify-between hover:bg-slate-800/60 hover:border-indigo-500/30 transition-all group/newinst text-left"
+                            >
+                              <div className="flex items-center gap-6">
+                                <div className="w-12 h-12 rounded-[1rem] flex items-center justify-center bg-indigo-500/10 text-indigo-400">
+                                  <Music className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <p className="text-white font-black uppercase italic text-lg leading-none mb-1">{inst.Instrumento}</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{inst.Marca}</span>
+                                    <span className="text-[9px] font-bold text-slate-600">|</span>
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{inst.Modelo}</span>
+                                    {inst.Serie && (
+                                      <>
+                                        <span className="text-[9px] font-bold text-slate-600">|</span>
+                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">S/N: {inst.Serie}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <ArrowRight className="w-5 h-5 text-slate-700 group-hover/newinst:text-white transition-all" />
+                            </button>
+                          ))
+                      ) : (
+                        <p className="text-center text-slate-600 text-xs font-bold uppercase tracking-widest mt-4">Escribe al menos 2 letras para buscar un instrumento.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {mode === 'in' && selectedStudent.instruments.filter(i => isItemLoaned(i)).length === 0 && (
                   <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
