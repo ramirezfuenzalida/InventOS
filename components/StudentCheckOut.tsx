@@ -3,7 +3,6 @@ import React, { useState, useMemo } from 'react';
 import { Search, Music, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, X, Calendar, AlertCircle, ChevronDown, PenTool } from 'lucide-react';
 import { InventoryItem, Student } from '../types.ts';
 import { isItemLoaned, globalNormalize } from '../utils.ts';
-import SignaturePad from './SignaturePad.tsx';
 
 interface StudentCheckOutProps {
   inventory: InventoryItem[];
@@ -28,8 +27,6 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [showSignature, setShowSignature] = useState(false);
-  const [signatureData, setSignatureData] = useState<string | null>(null);
   const [instrumentSearchTerm, setInstrumentSearchTerm] = useState('');
 
   // Normalización segura para búsqueda
@@ -168,12 +165,6 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
     if (e) e.preventDefault();
     if (!selectedItem) return;
 
-    // En modo salida, pedir firma primero
-    if (mode === 'out' && !signatureData) {
-      setShowSignature(true);
-      return;
-    }
-
     if (mode === 'out') {
       const studentName = selectedStudent?.studentName || selectedItem.Estudiante || '';
       const curso = selectedStudent?.course || selectedItem.Curso || '';
@@ -184,24 +175,11 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
     setIsSubmitted(true);
   };
 
-  const handleSignatureSave = (dataUrl: string) => {
-    setSignatureData(dataUrl);
-    setShowSignature(false);
-    // Confirmar automáticamente después de firmar
-    if (!selectedItem) return;
-    const studentName = selectedStudent?.studentName || selectedItem.Estudiante || '';
-    const curso = selectedStudent?.course || selectedItem.Curso || '';
-    onConfirm(Number(selectedItem.id), studentName, curso, selectedDate);
-    setIsSubmitted(true);
-  };
-
   const resetForm = () => {
     setIsSubmitted(false);
     setSelectedItem(null);
     setSelectedStudent(null);
     setSearchTerm('');
-    setSignatureData(null);
-    setShowSignature(false);
   };
 
   // ── PANTALLA DE ÉXITO ──
@@ -553,22 +531,13 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                   className={`md:col-span-2 py-8 rounded-[2.5rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl hover:scale-[1.02] active:scale-95 text-white ${mode === 'out' ? 'bg-emerald-600 shadow-emerald-600/20' : 'bg-indigo-600 shadow-indigo-600/20'}`}
                 >
                   {mode === 'out' ? <PenTool className="w-7 h-7" /> : <LogIn className="w-7 h-7" />}
-                  {mode === 'out' ? 'FIRMAR Y CONFIRMAR SALIDA' : 'PROCESAR RETORNO'}
+                  {mode === 'out' ? 'CONFIRMAR SALIDA' : 'PROCESAR RETORNO'}
                 </button>
               </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Modal de Firma Digital */}
-      {showSignature && selectedItem && (
-        <SignaturePad
-          studentName={selectedStudent?.studentName || selectedItem.Estudiante || 'ESTUDIANTE'}
-          onSave={handleSignatureSave}
-          onCancel={() => setShowSignature(false)}
-        />
-      )}
     </div>
   );
 };
