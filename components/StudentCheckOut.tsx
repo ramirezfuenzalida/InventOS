@@ -27,6 +27,7 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [instrumentSearchTerm, setInstrumentSearchTerm] = useState('');
 
   // Normalización segura para búsqueda
@@ -88,7 +89,7 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
     }
 
     return Array.from(groupMap.values()).sort((a, b) => a.studentName.localeCompare(b.studentName));
-  }, [inventory]);
+  }, [inventory, availableStudents]);
 
   /**
    * Resultados de búsqueda agrupados por estudiante.
@@ -163,23 +164,39 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!selectedItem) return;
+    if (!selectedItem || isProcessing) return;
 
-    if (mode === 'out') {
-      const studentName = selectedStudent?.studentName || selectedItem.Estudiante || '';
-      const curso = selectedStudent?.course || selectedItem.Curso || '';
-      onConfirm(Number(selectedItem.id), studentName, curso, selectedDate);
-    } else {
-      onReturn(Number(selectedItem.id), selectedDate);
+    if (!selectedDate) {
+      alert("Por favor, selecciona una fecha válida.");
+      return;
     }
-    setIsSubmitted(true);
+
+    setIsProcessing(true);
+
+    try {
+      if (mode === 'out') {
+        const studentName = selectedStudent?.studentName || selectedItem.Estudiante || 'ESTUDIANTE NO IDENTIFICADO';
+        const curso = selectedStudent?.course || selectedItem.Curso || 'SIN CURSO';
+        onConfirm(Number(selectedItem.id), studentName, curso, selectedDate);
+      } else {
+        onReturn(Number(selectedItem.id), selectedDate);
+      }
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error(error);
+      alert("Error al procesar la solicitud.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const resetForm = () => {
     setIsSubmitted(false);
+    setIsProcessing(false);
     setSelectedItem(null);
     setSelectedStudent(null);
     setSearchTerm('');
+    setInstrumentSearchTerm('');
   };
 
   // ── PANTALLA DE ÉXITO ──
@@ -528,10 +545,11 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className={`md:col-span-2 py-8 rounded-[2.5rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl hover:scale-[1.02] active:scale-95 text-white ${mode === 'out' ? 'bg-emerald-600 shadow-emerald-600/20' : 'bg-indigo-600 shadow-indigo-600/20'}`}
+                  disabled={isProcessing}
+                  className={`md:col-span-2 py-8 rounded-[2.5rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl hover:scale-[1.02] active:scale-95 text-white ${mode === 'out' ? 'bg-emerald-600 shadow-emerald-600/20' : 'bg-indigo-600 shadow-indigo-600/20'} ${isProcessing ? 'opacity-50 cursor-not-allowed hover:scale-100 active:scale-100' : ''}`}
                 >
                   {mode === 'out' ? <PenTool className="w-7 h-7" /> : <LogIn className="w-7 h-7" />}
-                  {mode === 'out' ? 'CONFIRMAR SALIDA' : 'PROCESAR RETORNO'}
+                  {isProcessing ? 'PROCESANDO...' : (mode === 'out' ? 'CONFIRMAR SALIDA' : 'PROCESAR RETORNO')}
                 </button>
               </div>
             </div>
