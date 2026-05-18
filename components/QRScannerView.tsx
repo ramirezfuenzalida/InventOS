@@ -471,7 +471,8 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
             ${item.Instrumento || 'S/N'}
           </div>
           <div style="font-size:7px;color:#666;text-transform:uppercase">${item.Marca || ''} ${item.Modelo || ''}</div>
-          <div style="font-size:7px;color:#999">S/N: ${item.Serie || '—'}</div>
+          <div style="font-size:7px;color:#999;margin-bottom:2px;">S/N: ${item.Serie || '—'}</div>
+          ${item.Estudiante ? `<div style="font-size:8px;color:#1e40af;font-weight:900;text-transform:uppercase;background:#e0e7ff;padding:2px;border-radius:4px;">👤 ${item.Estudiante}</div>` : ''}
         </div>
       `;
     }).join('');
@@ -997,7 +998,12 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                       <img src={qrSrc} alt={`QR ${item.Instrumento}`} className="w-full aspect-square object-contain" />
                       <p className="text-[9px] font-black text-slate-900 uppercase mt-1 truncate">{item.Instrumento}</p>
                       <p className="text-[7px] font-bold text-slate-500 uppercase truncate">{item.Marca} {item.Modelo}</p>
-                      <p className="text-[7px] text-slate-400">S/N: {item.Serie || '—'}</p>
+                      <p className="text-[7px] text-slate-400 mb-1">S/N: {item.Serie || '—'}</p>
+                      {item.Estudiante && (
+                        <div className="text-[8px] font-black text-indigo-800 bg-indigo-100 rounded px-1 py-0.5 truncate">
+                          👤 {item.Estudiante}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
