@@ -6,11 +6,11 @@ import { isItemLoaned, globalNormalize } from '../utils.ts';
 
 interface StudentCheckOutProps {
   inventory: InventoryItem[];
-  onConfirm: (id: number, student: string, curso: string, fecha: string) => void;
-  onReturn: (id: number, fecha: string) => void;
+  availableStudents?: Student[];
+  onConfirm: (id: string | number, student: string, curso: string, fecha: string) => void;
+  onReturn: (id: string | number, fecha: string) => void;
   onCancel?: () => void;
   isExternalView?: boolean;
-  availableStudents?: Student[];
 }
 
 /** Estructura agrupada: un estudiante con todos sus instrumentos */
@@ -177,9 +177,9 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
       if (mode === 'out') {
         const studentName = selectedStudent?.studentName || selectedItem.Estudiante || 'ESTUDIANTE NO IDENTIFICADO';
         const curso = selectedStudent?.course || selectedItem.Curso || 'SIN CURSO';
-        onConfirm(Number(selectedItem.id), studentName, curso, selectedDate);
+        onConfirm(selectedItem.id, studentName, curso, selectedDate);
       } else {
-        onReturn(Number(selectedItem.id), selectedDate);
+        onReturn(selectedItem.id, selectedDate);
       }
       setIsSubmitted(true);
     } catch (error) {

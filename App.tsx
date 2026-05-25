@@ -307,7 +307,7 @@ const App: React.FC = () => {
             // 3. Actualizar base de datos de estudiantes
             const uploadStudents = Array.from(new Map(mappedData
               .filter(i => i.Estudiante && String(i.Estudiante).trim() !== '')
-              .map(i => {
+              .map((i: any) => {
                 const sName = String(i.Estudiante).toUpperCase().trim();
                 const sCourse = String(i.Curso || i.metadata?.Curso || i.metadata?.CURSO || 'SIN CURSO').toUpperCase().trim();
                 return [globalNormalize(sName), {
@@ -399,7 +399,7 @@ const App: React.FC = () => {
     reader.readAsBinaryString(file);
   };
 
-  const handleCheckOut = (id: number, studentName: string, curso: string, fecha: string) => {
+  const handleCheckOut = (id: string | number, studentName: string, curso: string, fecha: string) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const [year, month] = fecha.split('-').map(Number);
@@ -428,7 +428,7 @@ const App: React.FC = () => {
     supabase.from('students').upsert({ name: studentName.toUpperCase(), course: curso.toUpperCase() }, { onConflict: 'name' }).then(({ error }) => error && console.error(error));
   };
 
-  const handleReturn = (id: number, fecha: string) => {
+  const handleReturn = (id: string | number, fecha: string) => {
     const updatedItem = { Prestado: 'NO', Ubicacion: 'SALA DE MÚSICA', FechaRetorno: fecha, Estudiante: '', Curso: '' };
     setData(prev => prev.map(item => item.id.toString() === id.toString() ? { ...item, ...updatedItem } : item));
     const historyRecord = history.find(rec => rec.instrumentId.toString() === id.toString() && rec.status === 'en_prestamo');
