@@ -1,28 +1,6 @@
-export interface InventoryItem {
-  id: string | number;
-  Instrumento: string;
-  Familia: string;
-  Marca: string;
-  Estado: string;
-  Modelo: string;
-  Medida: string;
-  Medidas: string;
-  Serie: string;
-  TipoCase: string;
-  Accesorios: string;
-  Soporte: string;
-  Limpio: string;
-  Responsable: string;
-  Estudiante: string;
-  Curso: string;
-  Observaciones: string;
-  Ubicacion: string;
-  Prestado: string;
-  FechaSalida: string;
-  HoraSalida: string;
-  FechaRetorno: string;
-  metadata?: any; // For future-proofing, stores extra columns
-}
+import { InventoryItem } from './schemas/inventory.schema.ts';
+
+export type { InventoryItem };
 
 export interface Student {
   id: string;
