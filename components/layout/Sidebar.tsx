@@ -10,7 +10,8 @@ import {
   Trash2,
   X,
   Sun,
-  Moon
+  Moon,
+  LogOut
 } from 'lucide-react';
 
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
@@ -22,14 +23,16 @@ interface SidebarProps {
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (val: boolean) => void;
   viewMode: string;
-  setViewMode: (mode: any) => void;
+  setViewMode: (mode: string) => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   setShowHistoryDeleteConfirm: (val: boolean) => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  isAuthenticated: boolean;
+  onSignOut: () => void;
 }
 
-const Logo = ({ setViewMode }: { setViewMode: (mode: any) => void }) => (
+const Logo = ({ setViewMode }: { setViewMode: (mode: string) => void }) => (
   <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setViewMode('dashboard')}>
     <div className="relative">
       <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -52,7 +55,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   handleFileUpload,
   setShowHistoryDeleteConfirm,
   theme,
-  toggleTheme
+  toggleTheme,
+  isAuthenticated,
+  onSignOut
 }) => {
   return (
     <>
@@ -75,13 +80,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button onClick={() => { setViewMode('dashboard'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'dashboard' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><LayoutDashboard className="w-5 h-5 mr-3" /> Dashboard</button>
             <button onClick={() => { setViewMode('list'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'list' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><FileSpreadsheet className="w-5 h-5 mr-3" /> InventarioWT</button>
             <button onClick={() => { setViewMode('reports'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><BarChart3 className="w-5 h-5 mr-3" /> Reportes</button>
+            
             <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Alumnos</div>
             <button onClick={() => { setViewMode('student-check'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'student-check' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><UserCheck className="w-5 h-5 mr-3" /> Salida/Retorno</button>
             <button onClick={() => { setViewMode('qr-access'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'qr-access' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><QrCode className="w-5 h-5 mr-3" /> Acceso QR</button>
             <button onClick={() => { setViewMode('qr-scanner'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'qr-scanner' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><Scan className="w-5 h-5 mr-3" /> Escáner QR</button>
-            <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Herramientas</div>
-            <label className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-indigo-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all"><FileUp className="w-5 h-5 mr-3" /> Actualizar Excel<input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} /></label>
-            <button onClick={() => { setShowHistoryDeleteConfirm(true); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all"><Trash2 className="w-5 h-5 mr-3" /> Borrar Reportes</button>
+            
+            {isAuthenticated && (
+              <>
+                <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Herramientas</div>
+                <label className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-indigo-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all"><FileUp className="w-5 h-5 mr-3" /> Actualizar Excel<input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} /></label>
+                <button onClick={() => { setShowHistoryDeleteConfirm(true); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all"><Trash2 className="w-5 h-5 mr-3" /> Borrar Reportes</button>
+                
+                <button 
+                  onClick={() => { onSignOut(); setIsMobileMenuOpen(false); }}
+                  className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-400 hover:bg-rose-500/10 transition-all mt-6"
+                >
+                  <LogOut className="w-5 h-5 mr-3 text-rose-500" /> Cerrar Sesión
+                </button>
+              </>
+            )}
           </nav>
 
           <div className="px-6 py-4 mt-auto border-t border-slate-900/50">

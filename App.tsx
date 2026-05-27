@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { Upload, Search, AlertTriangle, History, ArrowLeft } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Upload, Search, AlertTriangle, History, ArrowLeft, LogIn } from 'lucide-react';
+import { Session } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient.ts';
 
 // Tipos
-import { InventoryItem } from './types.ts';
+import { InventoryItem, Student, KPIStats } from './types.ts';
 import { globalNormalize, getEstadoCategoria, inferFamilia, isItemLoaned } from './utils.ts';
 
 // Layout
@@ -22,6 +24,7 @@ import InventoryForm from './components/InventoryForm.tsx';
 import InstrumentDetail from './components/InstrumentDetail.tsx';
 import OverdueAlerts from './components/OverdueAlerts.tsx';
 import QRScannerView from './components/QRScannerView.tsx';
+import { LoginView } from './components/LoginView.tsx';
 
 // Hooks
 import { useInventoryData } from './hooks/useInventoryData.ts';
@@ -60,6 +63,25 @@ const App: React.FC = () => {
   const [selectedInstrument, setSelectedInstrument] = useState<InventoryItem | null>(null);
   const [showOverdueAlerts, setShowOverdueAlerts] = useState(false);
 
+  // Supabase Auth Session
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setIsAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
@@ -77,6 +99,20 @@ const App: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setViewMode('student-check');
+  };
+
+  // Determinar si la vista actual requiere login
+  const isProtectedView = useMemo(() => {
+    const publicViews: ViewMode[] = ['student-check', 'qr-scanner', 'qr-access'];
+    return !publicViews.includes(viewMode);
+  }, [viewMode]);
+
+  // Si requiere login y no hay sesión activa, bloqueamos el panel
+  const needsAuth = isProtectedView && !session && !isStudentModeUrl;
 
   const filteredData = useMemo(() => {
     let base = [...data];
@@ -101,9 +137,9 @@ const App: React.FC = () => {
       ].join(' '));
       return searchString.includes(term);
     }).sort((a, b) => (a.Instrumento || '').localeCompare(b.Instrumento || ''));
-  }, [data, searchTerm, viewMode, selectedMonitor]);
+  }, [data, debouncedSearchTerm, viewMode, selectedMonitor]);
 
-  const uniqueStudents = useMemo(() => {
+  const uniqueStudents = useMemo((): Student[] => {
     if (students.length > 0) return students;
     const studentMap = new Map<string, string>();
     data.forEach(item => {
@@ -116,18 +152,21 @@ const App: React.FC = () => {
       }
     });
     return Array.from(studentMap.entries()).map(([name, course]) => ({
+      id: name,
       name: name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-      course: course,
-      id: name
+      course: course
     })).sort((a, b) => a.name.localeCompare(b.name));
   }, [data, students]);
 
-  const stats = useMemo(() => {
+  const stats = useMemo((): KPIStats => {
     const countBueno = data.filter(i => getEstadoCategoria(i.Estado) === 'BUENO').length;
     const countRegular = data.filter(i => getEstadoCategoria(i.Estado) === 'REGULAR').length;
     const countMalo = data.filter(i => getEstadoCategoria(i.Estado) === 'MALO').length;
     const loanedCount = data.filter(i => isItemLoaned(i)).length;
-    const catMap: any = {}; const monMap: any = {};
+    
+    const catMap: Record<string, number> = {}; 
+    const monMap: Record<string, number> = {};
+    
     data.forEach(item => {
       let familia = item.Familia || inferFamilia(item.Instrumento);
       if (familia.includes('VIOLINES')) familia = 'VIOLINES Y VIOLAS';
@@ -139,13 +178,31 @@ const App: React.FC = () => {
       catMap[familia] = (catMap[familia] || 0) + 1;
       monMap[item.Responsable || 'SIN MONITOR'] = (monMap[item.Responsable || 'SIN MONITOR'] || 0) + 1;
     });
+
     return {
-      total: data.length, necesitaReparacion: countMalo, bueno: countBueno, regular: countRegular, malo: countMalo, enPrestamo: loanedCount,
+      total: data.length,
+      necesitaReparacion: countMalo,
+      bueno: countBueno,
+      regular: countRegular,
+      malo: countMalo,
+      enPrestamo: loanedCount,
       categorias: Object.entries(catMap).map(([name, value]) => ({ name, value })),
       estados: [{ name: 'BUENO', count: countBueno }, { name: 'REGULAR', count: countRegular }, { name: 'MALO', count: countMalo }],
       monitores: Object.entries(monMap).map(([name, count]) => ({ name, count }))
     };
   }, [data]);
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center">
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-indigo-500/30 blur-3xl rounded-full animate-pulse"></div>
+          <div className="w-16 h-16 border-t-4 border-b-4 border-indigo-500 rounded-full animate-spin"></div>
+        </div>
+        <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Iniciando aplicación...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 flex w-full">
@@ -155,7 +212,7 @@ const App: React.FC = () => {
             <div className="absolute inset-0 bg-indigo-500/30 blur-3xl rounded-full animate-pulse"></div>
             <div className="relative w-24 h-24 border-t-4 border-b-4 border-indigo-500 rounded-full animate-spin"></div>
           </div>
-          <h2 className="text-2xl font-black text-white tracking-[0.3em] uppercase italic mb-2 animate-in fade-in slide-in-from-bottom-2">{processingMessage}</h2>
+          <h2 className="text-2xl font-black text-white tracking-[0.3em] uppercase italic mb-2">{processingMessage}</h2>
           <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden mt-4">
             <div className="h-full bg-indigo-600 animate-progress origin-left w-full"></div>
           </div>
@@ -211,6 +268,14 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* RENDER LOGIN PROMPT IF NEEDED */}
+      {needsAuth && (
+        <LoginView 
+          onSuccess={() => setShowLoginPrompt(false)} 
+          onClose={() => setViewMode('student-check')}
+        />
+      )}
+
       {!isStudentModeUrl && (
         <Sidebar
           isMobileMenuOpen={isMobileMenuOpen}
@@ -224,6 +289,8 @@ const App: React.FC = () => {
           setShowHistoryDeleteConfirm={setShowHistoryDeleteConfirm}
           theme={theme}
           toggleTheme={toggleTheme}
+          isAuthenticated={!!session}
+          onSignOut={handleSignOut}
         />
       )}
 
@@ -241,9 +308,7 @@ const App: React.FC = () => {
         {showInventoryForm && (
           <InventoryForm 
             onClose={() => setShowInventoryForm(false)} 
-            onSave={(newItem) => {
-              // React Query Realtime maneja esto, pero podemos ser optimistas
-              // No requerimos setData manual ya que Realtime invalidará y actualizará
+            onSave={() => {
               setShowInventoryForm(false);
             }} 
           />
@@ -274,27 +339,37 @@ const App: React.FC = () => {
                 <img src={APP_LOGO_URL} className="w-32 h-32 object-contain" alt="Logo" />
               </div>
               <h2 className="text-6xl font-black mb-12 uppercase italic text-white leading-[0.9]">Inventario<br /><span className="text-indigo-500">WT</span></h2>
-              <label className="bg-white text-slate-950 px-16 py-8 rounded-[2.5rem] font-black text-2xl cursor-pointer hover:bg-indigo-50 transition-all shadow-xl">
-                <Upload className="w-8 h-8 inline mr-4" /> CARGAR INVENTARIO
-                <input type="file" className="hidden" accept=".xlsx, .xls" onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleExcelUpload(file, () => setViewMode('dashboard'));
-                }} />
-              </label>
+              
+              {!session ? (
+                <button 
+                  onClick={() => setViewMode('dashboard')}
+                  className="bg-indigo-600 text-white px-16 py-8 rounded-[2.5rem] font-black text-2xl hover:bg-indigo-500 transition-all shadow-xl flex items-center gap-4 mx-auto"
+                >
+                  <LogIn className="w-8 h-8" /> ACCEDER AL SISTEMA
+                </button>
+              ) : (
+                <label className="bg-white text-slate-950 px-16 py-8 rounded-[2.5rem] font-black text-2xl cursor-pointer hover:bg-indigo-50 transition-all shadow-xl inline-block">
+                  <Upload className="w-8 h-8 inline mr-4" /> CARGAR INVENTARIO
+                  <input type="file" className="hidden" accept=".xlsx, .xls" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleExcelUpload(file, () => setViewMode('dashboard'));
+                  }} />
+                </label>
+              )}
             </div>
           ) : (
             <>
               {viewMode === 'dashboard' && (
                 <div className="space-y-12">
-                  <KPICards stats={stats as any} onCardClick={(f) => {
+                  <KPICards stats={stats} onCardClick={(f) => {
                     if (f === 'loaned') setViewMode('loaned-detail');
                     else if (f === 'malo') setViewMode('repair-detail');
                     else if (f === 'regular') setViewMode('regular-detail');
                     else if (f === 'bueno') setViewMode('bueno-detail');
                     else setViewMode('list');
                   }} />
-                  <Charts stats={stats as any} />
-                  <MonitorStats stats={stats as any} onMonitorClick={(name) => { setSelectedMonitor(name); setViewMode('monitor-detail'); }} />
+                  <Charts stats={stats} />
+                  <MonitorStats stats={stats} onMonitorClick={(name) => { setSelectedMonitor(name); setViewMode('monitor-detail'); }} />
                 </div>
               )}
               {viewMode === 'student-check' && <StudentCheckOut inventory={data} onConfirm={performCheckout} onReturn={performReturn} onCancel={() => setViewMode('dashboard')} availableStudents={uniqueStudents} />}

@@ -11,7 +11,7 @@ import { supabase } from '../supabaseClient.ts';
 /** Reproduce un sonido de beep usando Web Audio API */
 const playScanSound = (success: boolean) => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
     oscillator.connect(gain);

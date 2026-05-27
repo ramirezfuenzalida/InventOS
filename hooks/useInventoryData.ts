@@ -24,7 +24,7 @@ export const useInventoryData = () => {
   const [processingMessage, setProcessingMessage] = useState("PROCESANDO...");
   const isDeletingRef = useRef(false);
 
-  const { data: initialData, isLoading } = useQuery<CacheData>({
+  const { data: initialData, isLoading } = useQuery<CacheData, Error>({
     queryKey: ['inventoryData'],
     queryFn: fetchInitialData,
     staleTime: Infinity, 
@@ -74,7 +74,6 @@ export const useInventoryData = () => {
       setIsProcessing(false);
       setProcessingMessage("PROCESANDO...");
     }
-    // onError is handled by global ErrorHandler
   });
 
   const handleExcelUpload = async (file: File, onSuccess: () => void) => {
@@ -114,12 +113,11 @@ export const useInventoryData = () => {
     curso: string;
     fecha: string;
     timeStr: string;
-    selectedItem?: InventoryItem;
   }
 
   const checkoutMutation = useMutation<unknown, Error, CheckoutVariables, { previousData: CacheData | undefined }>({
-    mutationFn: async ({ id, studentName, curso, fecha, timeStr, selectedItem }) => {
-      return await checkoutInstrument(id, studentName, curso, fecha, timeStr, selectedItem);
+    mutationFn: async ({ id, studentName, curso, fecha, timeStr }) => {
+      return await checkoutInstrument(id, studentName, curso, fecha, timeStr);
     },
     onMutate: async ({ id, studentName, curso, fecha, timeStr }) => {
       await queryClient.cancelQueries({ queryKey: ['inventoryData'] });
@@ -129,7 +127,7 @@ export const useInventoryData = () => {
         if (!old) return old;
         const newInventory = old.inventory.map((item) => 
           item.id.toString() === id.toString() 
-            ? { ...item, Estudiante: studentName, Curso: curso, Prestado: 'SÍ', Ubicacion: 'HOGAR', FechaSalida: fecha, HoraSalida: timeStr } 
+            ? { ...item, Estudiante: studentName, Curso: curso, Prestado: 'SÍ', Ubicacion: 'HOGAR', FechaSalida: fecha, HoraSalida: timeStr, FechaRetorno: '' } 
             : item
         );
         return { ...old, inventory: newInventory };
@@ -149,8 +147,7 @@ export const useInventoryData = () => {
   const performCheckout = async (id: string | number, studentName: string, curso: string, fecha: string) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const selectedItem = data.find(i => i.id.toString() === id.toString());
-    checkoutMutation.mutate({ id, studentName, curso, fecha, timeStr, selectedItem });
+    checkoutMutation.mutate({ id, studentName, curso, fecha, timeStr });
   };
 
   interface ReturnVariables {

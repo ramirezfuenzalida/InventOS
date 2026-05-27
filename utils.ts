@@ -1,7 +1,8 @@
+import { InventoryItem } from './types.ts';
 
-export const globalNormalize = (val: any): string => {
+export const globalNormalize = (val: unknown): string => {
     if (val === null || val === undefined) return "";
-    return val.toString()
+    return String(val)
         .toLowerCase()
         .trim()
         .normalize("NFD")
@@ -38,13 +39,12 @@ export const inferFamilia = (instrumento: string): string => {
     return 'OTROS';
 };
 
-
 /**
  * Verifica si un instrumento se considera "Prestado" (fuera de sala).
  * Es resiliente: si tiene un estudiante asignado, se considera prestado 
  * a menos que explícitamente se marque como No Prestado o Disponible.
  */
-export const isItemLoaned = (item: any): boolean => {
+export const isItemLoaned = (item: Partial<InventoryItem> | null | undefined): boolean => {
     if (!item) return false;
     
     const prestado = globalNormalize(item.Prestado || "");

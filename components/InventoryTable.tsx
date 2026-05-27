@@ -10,7 +10,7 @@ interface InventoryTableProps {
 }
 
 const InventoryTable: React.FC<InventoryTableProps> = ({ data, onItemClick }) => {
-  const safeUpperCase = (val: any) => val ? String(val).toUpperCase().trim() : "";
+  const safeUpperCase = (val: string | null | undefined): string => val ? String(val).toUpperCase().trim() : "";
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({

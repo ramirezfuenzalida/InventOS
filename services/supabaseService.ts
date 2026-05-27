@@ -9,10 +9,14 @@ export const fetchInitialData = async () => {
     supabase.from('students').select('*').order('name', { ascending: true })
   ]);
   
+  if (invRes.error) throw invRes.error;
+  if (histRes.error) throw histRes.error;
+  if (studRes.error) throw studRes.error;
+
   return {
-    inventory: invRes.data as InventoryItem[] || [],
-    history: histRes.data as MovementRecord[] || [],
-    students: studRes.data as Student[] || []
+    inventory: (invRes.data as InventoryItem[]) || [],
+    history: (histRes.data as MovementRecord[]) || [],
+    students: (studRes.data as Student[]) || []
   };
 };
 
@@ -21,8 +25,6 @@ export const syncExcelData = async (
   onProgress: (msg: string) => void
 ) => {
   onProgress("Sincronizando base de datos...");
-  // Nota: A nivel enterprise, esto se hace con un RPC (Stored Procedure) para asegurar 
-  // transaccionalidad. Aquí replicamos la lógica original pero extraída.
   const { error: delError } = await supabase.from('inventory').delete().neq('id', 'placeholder');
   if (delError) throw delError;
 
@@ -35,7 +37,7 @@ export const syncExcelData = async (
   // Actualizar base de estudiantes
   const uploadStudents = Array.from(new Map(mappedData
     .filter(i => i.Estudiante && String(i.Estudiante).trim() !== '')
-    .map((i: any) => {
+    .map((i: InventoryItem) => {
       const sName = String(i.Estudiante).toUpperCase().trim();
       const sCourse = String(i.Curso || i.metadata?.Curso || i.metadata?.CURSO || 'SIN CURSO').toUpperCase().trim();
       return [globalNormalize(sName), {
@@ -101,34 +103,18 @@ export const checkoutInstrument = async (
   studentName: string, 
   curso: string, 
   fecha: string, 
-  timeStr: string,
-  selectedItem: InventoryItem | undefined
+  timeStr: string
 ) => {
-  const [year, month] = fecha.split('-').map(Number);
-  const updatedItem = { Estudiante: studentName, Curso: curso, Prestado: 'SÍ', Ubicacion: 'HOGAR', FechaSalida: fecha, HoraSalida: timeStr };
+  const { data, error } = await supabase.rpc('rpc_checkout_instrument', {
+    p_instrument_id: String(id),
+    p_student_name: studentName,
+    p_curso: curso,
+    p_fecha: fecha,
+    p_time_str: timeStr
+  });
 
-  const newHistoryRecord: MovementRecord = {
-    id: Math.random().toString(36).substr(2, 9),
-    instrumentId: id,
-    instrumentName: selectedItem?.Instrumento || '',
-    serie: selectedItem?.Serie || '',
-    marca: selectedItem?.Marca || '',
-    estudiante: studentName,
-    curso: curso,
-    fechaSalida: fecha,
-    horaSalida: timeStr,
-    status: 'en_prestamo',
-    mes: month - 1,
-    anio: year
-  };
-
-  const p1 = supabase.from('inventory').update({ ...updatedItem, id: String(id) }).eq('id', String(id));
-  const p2 = supabase.from('history').insert({ ...newHistoryRecord, instrumentId: String(id) });
-  const p3 = supabase.from('students').upsert({ name: studentName.toUpperCase(), course: curso.toUpperCase() }, { onConflict: 'name' });
-  
-  await Promise.all([p1, p2, p3]);
-
-  return { updatedItem, newHistoryRecord };
+  if (error) throw error;
+  return data;
 };
 
 export const returnInstrument = async (
@@ -136,16 +122,14 @@ export const returnInstrument = async (
   fecha: string,
   historyId?: string
 ) => {
-  const updatedItem = { Prestado: 'NO', Ubicacion: 'SALA DE MÚSICA', FechaRetorno: fecha, Estudiante: '', Curso: '' };
+  const { data, error } = await supabase.rpc('rpc_return_instrument', {
+    p_instrument_id: String(id),
+    p_fecha: fecha,
+    p_history_id: historyId || null
+  });
 
-  const p1 = supabase.from('inventory').update({ ...updatedItem, id: String(id) }).eq('id', String(id));
-  const p2 = historyId 
-    ? supabase.from('history').update({ fechaRetorno: fecha, status: 'completado' }).eq('id', historyId)
-    : Promise.resolve();
-
-  await Promise.all([p1, p2]);
-
-  return updatedItem;
+  if (error) throw error;
+  return data;
 };
 
 export const clearInventoryDatabase = async () => {

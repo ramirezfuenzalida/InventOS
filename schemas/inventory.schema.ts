@@ -21,13 +21,17 @@ export const inventoryItemSchema = z.object({
   Responsable: stringFallback,
   Estudiante: stringFallback,
   Curso: stringFallback,
+  Telefono: stringFallback,
+  Email: stringFallback,
+  Apoderado: stringFallback,
+  TelefonoApoderado: stringFallback,
   Observaciones: stringFallback,
   Ubicacion: stringFallback,
   Prestado: stringFallback,
   FechaSalida: stringFallback,
   HoraSalida: stringFallback,
   FechaRetorno: stringFallback,
-  metadata: z.any().optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
 }).refine(data => data.Instrumento.trim() !== '' || data.Estudiante.trim() !== '', {
   message: "El registro debe tener al menos un Instrumento o un Estudiante asignado.",
   path: ["Instrumento"]

@@ -31,9 +31,9 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
   const [instrumentSearchTerm, setInstrumentSearchTerm] = useState('');
 
   // Normalización segura para búsqueda
-  const safeNorm = (val: any): string => {
+  const safeNorm = (val: unknown): string => {
     if (val === null || val === undefined) return '';
-    return val.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    return String(val).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   };
 
   /**

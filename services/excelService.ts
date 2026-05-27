@@ -1,6 +1,6 @@
 import { InventoryItem } from '../types.ts';
 import { globalNormalize } from '../utils.ts';
-import { inventoryArraySchema } from '../schemas/inventory.schema.ts';
+import { inventoryItemSchema } from '../schemas/inventory.schema.ts';
 
 export interface ExcelParseResult {
   success: boolean;
@@ -9,20 +9,25 @@ export interface ExcelParseResult {
 }
 
 export const processExcelFile = async (file: File): Promise<ExcelParseResult> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
         const bstr = evt.target?.result;
+        if (!bstr) {
+          resolve({ success: false, errors: ['No se pudo leer el contenido del archivo.'] });
+          return;
+        }
+
         // Dynamic import to prevent blocking the initial render
         const XLSX = await import('xlsx');
         
         const wb = XLSX.read(bstr, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rawData = XLSX.utils.sheet_to_json<any>(ws);
+        const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
         
-        const mappedData: any[] = rawData.map((row, index) => {
-          const mappedItem: any = { id: String(index) };
+        const mappedData: Record<string, unknown>[] = rawData.map((row, index) => {
+          const mappedItem: Record<string, string> = { id: String(index + 1) };
           const standardFields: Record<string, string[]> = {
             Instrumento: ['instrumento', 'item', 'descripcion del instrumento', 'nombre del instrumento', 'instrumentos oswt'],
             Familia: ['familia', 'seccion', 'categoria', 'grupo', 'familia de instrumento'],
@@ -51,7 +56,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             FechaRetorno: ['fecha de retorno']
           };
 
-          const metadata: any = {};
+          const metadata: Record<string, string> = {};
           const excelKeys = Object.keys(row);
 
           excelKeys.forEach(excelKey => {
@@ -83,35 +88,55 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
               }
             }
 
+            const rawVal = row[excelKey];
+            const strVal = rawVal !== null && rawVal !== undefined ? String(rawVal) : '';
+
             if (matchedField) {
               const currentVal = mappedItem[matchedField];
               const isExact = standardFields[matchedField].some(p => normExcelKey === globalNormalize(p));
 
               if (!currentVal || isExact) {
-                mappedItem[matchedField] = String(row[excelKey] || '');
+                mappedItem[matchedField] = strVal;
               } else {
-                metadata[excelKey] = String(row[excelKey] || '');
+                metadata[excelKey] = strVal;
               }
             } else {
-              metadata[excelKey] = String(row[excelKey] || '');
+              metadata[excelKey] = strVal;
             }
           });
 
-          return { ...mappedItem, metadata };
-        }).filter(item => (item.Instrumento || (item.Estudiante && String(item.Estudiante).trim() !== '')) && String(item.Instrumento || '').toLowerCase() !== 'total');
+          // Unify mappedItem structure with metadata
+          const resultRow: Record<string, unknown> = { ...mappedItem };
+          resultRow.metadata = metadata;
+          return resultRow;
+        }).filter(item => {
+          const inst = String(item.Instrumento || '');
+          const est = String(item.Estudiante || '');
+          return (inst.trim() !== '' || est.trim() !== '') && inst.toLowerCase() !== 'total';
+        });
 
-        // Validación Zod Enterprise
-        const parseResult = inventoryArraySchema.safeParse(mappedData);
-        
-        if (parseResult.success) {
-          resolve({ success: true, data: parseResult.data });
+        // Robust row-by-row Zod Validation
+        const validRows: InventoryItem[] = [];
+        const errorLogs: string[] = [];
+
+        mappedData.forEach((row, index) => {
+          const parseResult = inventoryItemSchema.safeParse(row);
+          if (parseResult.success) {
+            validRows.push(parseResult.data);
+          } else {
+            parseResult.error.issues.forEach(issue => {
+              const field = issue.path[0] || 'General';
+              const rawVal = row[String(field)];
+              const invalidVal = rawVal !== null && rawVal !== undefined ? String(rawVal) : 'vacío';
+              errorLogs.push(`Fila ${index + 1}: El valor "${invalidVal}" en el campo "${String(field)}" es inválido (${issue.message}).`);
+            });
+          }
+        });
+
+        if (errorLogs.length > 0) {
+          resolve({ success: false, errors: errorLogs });
         } else {
-          const humanErrors = parseResult.error.issues.map(issue => {
-            const rowIndex = issue.path[0];
-            const field = issue.path[1] || 'General';
-            return `Fila ${Number(rowIndex) + 1}: Error en '${String(field)}' - ${issue.message}`;
-          });
-          resolve({ success: false, errors: humanErrors });
+          resolve({ success: true, data: validRows });
         }
       } catch (error: unknown) {
         if (error instanceof Error) {

@@ -12,7 +12,6 @@ const queryClient = new QueryClient({
   },
   mutationCache: new MutationCache({
     onError: (error: unknown) => {
-      console.error('Global Mutation Error:', error);
       const message = error instanceof Error ? error.message : 'Error de servidor desconocido';
       // Despachar evento para que la UI (ej. Toasts) reaccione
       window.dispatchEvent(new CustomEvent('globalError', { detail: message }));

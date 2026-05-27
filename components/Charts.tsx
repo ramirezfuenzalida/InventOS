@@ -10,7 +10,13 @@ interface ChartsProps {
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#06b6d4'];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: { name: string; value: number; color?: string }[];
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-slate-950 border border-slate-700 p-4 rounded-2xl shadow-2xl backdrop-blur-xl">
@@ -22,7 +28,16 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, name, percent }: any) => {
+interface CustomizedLabelProps {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  outerRadius: number;
+  name: string;
+  percent: number;
+}
+
+const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, name, percent }: CustomizedLabelProps) => {
   const RADIAN = Math.PI / 180;
   const radius = outerRadius + 15;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
