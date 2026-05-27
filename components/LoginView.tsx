@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient.ts';
-import { Lock, Mail, AlertCircle, Eye, EyeOff, Loader2, Music } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Eye, EyeOff, Loader2, Music, Package } from 'lucide-react';
 
 interface LoginViewProps {
   onSuccess: () => void;
@@ -66,14 +66,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose }) => {
         <div className="flex flex-col items-center text-center space-y-6 relative z-10">
           
           {/* Logo Container with glass-back */}
-          <div className="w-16 h-16 bg-white/[0.04] border border-white/[0.15] rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-xl group relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/25 to-rose-500/25 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
-            <Music className="w-7 h-7 text-indigo-400 group-hover:scale-110 group-hover:text-white transition-all duration-500 relative z-10" />
+          <div className="w-20 h-20 bg-white/[0.04] border border-white/[0.15] rounded-3xl flex items-center justify-center shadow-2xl backdrop-blur-xl group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-violet-500/10 to-rose-500/20 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              {/* Box/Inventory Icon in the background, slightly offset */}
+              <Package className="w-6.5 h-6.5 text-slate-500 absolute bottom-0.5 right-0.5 group-hover:text-rose-400 group-hover:scale-105 transition-all duration-500 z-10" />
+              {/* Music Icon overlapping on top */}
+              <Music className="w-6.5 h-6.5 text-indigo-400 absolute top-0.5 left-0.5 group-hover:text-white group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 z-20" />
+            </div>
           </div>
 
           <div className="space-y-2">
             <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">
-              Panel <span className="text-indigo-400">OSWT</span>
+              Invent<span className="text-indigo-400">OS</span>
             </h2>
             <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.25em] leading-relaxed">
               Control de Inventario y Préstamos
