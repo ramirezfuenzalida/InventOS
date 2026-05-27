@@ -102,7 +102,7 @@ const App: React.FC = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setViewMode('student-check');
+    setViewMode('dashboard');
   };
 
   // Determinar si la vista actual requiere login
