@@ -205,7 +205,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 flex w-full">
+    <div className="min-h-screen bg-[#020617] text-slate-200 flex w-full max-w-full overflow-x-hidden relative">
       {isProcessing && (
         <div className="fixed inset-0 z-[200] bg-[#020617]/95 backdrop-blur-3xl flex flex-col items-center justify-center">
           <div className="relative mb-12">
@@ -294,7 +294,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden">
         {!isStudentModeUrl && (
           <Header 
             setIsMobileMenuOpen={setIsMobileMenuOpen}

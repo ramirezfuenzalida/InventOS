@@ -80,11 +80,11 @@ const Charts: React.FC<ChartsProps> = ({ stats, onStatClick }) => {
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-      <div className="bg-slate-900/40 border border-slate-800/60 p-8 rounded-[2.5rem] shadow-2xl">
+      <div className="bg-slate-900/40 border border-slate-800/60 p-8 rounded-[2.5rem] shadow-2xl min-w-0 overflow-hidden">
         <h3 className="text-xl font-black text-white mb-10 flex items-center gap-3 tracking-tight uppercase italic">
           <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />Familias e Instrumentos
         </h3>
-        <div className="h-[450px] w-full">
+        <div className="h-[450px] w-full min-w-0 overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
               <Pie
@@ -121,11 +121,11 @@ const Charts: React.FC<ChartsProps> = ({ stats, onStatClick }) => {
           </ResponsiveContainer>
         </div>
       </div>
-      <div className="bg-slate-900/40 border border-slate-800/60 p-8 rounded-[2.5rem] shadow-2xl">
+      <div className="bg-slate-900/40 border border-slate-800/60 p-8 rounded-[2.5rem] shadow-2xl min-w-0 overflow-hidden">
         <h3 className="text-xl font-black text-white mb-10 flex items-center gap-3 tracking-tight uppercase italic">
           <div className="w-1.5 h-6 bg-rose-500 rounded-full" />Estado del Inventario
         </h3>
-        <div className="h-[450px] w-full">
+        <div className="h-[450px] w-full min-w-0 overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={estadoData}
