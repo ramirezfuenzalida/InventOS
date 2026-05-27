@@ -48,7 +48,8 @@ const App: React.FC = () => {
     performCheckout,
     performReturn,
     clearDatabase,
-    clearHistory
+    clearHistory,
+    isLoading
   } = useInventoryData();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -192,14 +193,14 @@ const App: React.FC = () => {
     };
   }, [data]);
 
-  if (isAuthLoading) {
+  if (isAuthLoading || isLoading) {
     return (
       <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center">
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-indigo-500/30 blur-3xl rounded-full animate-pulse"></div>
           <div className="w-16 h-16 border-t-4 border-b-4 border-indigo-500 rounded-full animate-spin"></div>
         </div>
-        <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Iniciando aplicación...</p>
+        <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Iniciando InventOS...</p>
       </div>
     );
   }
