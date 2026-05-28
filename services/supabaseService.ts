@@ -24,18 +24,17 @@ export const syncExcelData = async (
   mappedData: InventoryItem[], 
   onProgress: (msg: string) => void
 ) => {
-  onProgress("Sincronizando base de datos...");
-  const { error: delError } = await supabase.from('inventory').delete().neq('id', 'placeholder');
-  if (delError) throw delError;
+  onProgress("Preparando datos para la base de datos...");
+  const dbItems = mappedData.map((item, idx) => {
+    const { Telefono, Email, Apoderado, TelefonoApoderado, ...dbItem } = item;
+    return { ...dbItem, id: String(idx + 1) };
+  });
 
-  onProgress(`Insertando ${mappedData.length} registros...`);
-  const { error: invError } = await supabase.from('inventory').insert(
-    mappedData.map((item, idx) => {
-      const { Telefono, Email, Apoderado, TelefonoApoderado, ...dbItem } = item;
-      return { ...dbItem, id: String(idx + 1) };
-    })
-  );
-  if (invError) throw invError;
+  onProgress("Sincronizando inventario en el servidor de forma segura...");
+  const { error: syncError } = await supabase.rpc('rpc_sync_inventory', {
+    p_items: dbItems
+  });
+  if (syncError) throw syncError;
 
   // Actualizar base de estudiantes
   const uploadStudents = Array.from(new Map(mappedData
