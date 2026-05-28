@@ -30,7 +30,10 @@ export const syncExcelData = async (
 
   onProgress(`Insertando ${mappedData.length} registros...`);
   const { error: invError } = await supabase.from('inventory').insert(
-    mappedData.map((item, idx) => ({ ...item, id: String(idx + 1) }))
+    mappedData.map((item, idx) => {
+      const { Telefono, Email, Apoderado, TelefonoApoderado, ...dbItem } = item;
+      return { ...dbItem, id: String(idx + 1) };
+    })
   );
   if (invError) throw invError;
 
