@@ -147,7 +147,7 @@ export const useInventoryData = () => {
   const performCheckout = async (id: string | number, studentName: string, curso: string, fecha: string) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    checkoutMutation.mutate({ id, studentName, curso, fecha, timeStr });
+    return await checkoutMutation.mutateAsync({ id, studentName, curso, fecha, timeStr });
   };
 
   interface ReturnVariables {
@@ -187,7 +187,7 @@ export const useInventoryData = () => {
 
   const performReturn = async (id: string | number, fecha: string) => {
     const historyRecord = history.find(rec => rec.instrumentId.toString() === id.toString() && rec.status === 'en_prestamo');
-    returnMutation.mutate({ id, fecha, historyId: historyRecord?.id });
+    return await returnMutation.mutateAsync({ id, fecha, historyId: historyRecord?.id });
   };
 
   const clearDatabaseMutation = useMutation<void, Error, { onSuccess: () => void }>({

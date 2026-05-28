@@ -7,8 +7,8 @@ import { isItemLoaned, globalNormalize } from '../utils.ts';
 interface StudentCheckOutProps {
   inventory: InventoryItem[];
   availableStudents?: Student[];
-  onConfirm: (id: string | number, student: string, curso: string, fecha: string) => void;
-  onReturn: (id: string | number, fecha: string) => void;
+  onConfirm: (id: string | number, student: string, curso: string, fecha: string) => Promise<any> | void;
+  onReturn: (id: string | number, fecha: string) => Promise<any> | void;
   onCancel?: () => void;
   isExternalView?: boolean;
 }
@@ -162,7 +162,7 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
     setSelectedItem(item);
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!selectedItem || isProcessing) return;
 
@@ -177,14 +177,15 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
       if (mode === 'out') {
         const studentName = selectedStudent?.studentName || selectedItem.Estudiante || 'ESTUDIANTE NO IDENTIFICADO';
         const curso = selectedStudent?.course || selectedItem.Curso || 'SIN CURSO';
-        onConfirm(selectedItem.id, studentName, curso, selectedDate);
+        await onConfirm(selectedItem.id, studentName, curso, selectedDate);
       } else {
-        onReturn(selectedItem.id, selectedDate);
+        await onReturn(selectedItem.id, selectedDate);
       }
       setIsSubmitted(true);
     } catch (error) {
       console.error(error);
-      alert("Error al procesar la solicitud.");
+      // El error ya es manejado globalmente por la cache de React Query en index.tsx,
+      // pero evitamos poner isSubmitted en true al atraparlo aquí.
     } finally {
       setIsProcessing(false);
     }
@@ -269,24 +270,41 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
 
               {/* Lista de resultados agrupados por estudiante */}
               <div className="space-y-3 md:space-y-4">
-                {searchResults.map((group) => (
-                  <button
-                    key={group.studentName}
-                    type="button"
-                    onClick={() => handleSelectStudent(group)}
-                    className="w-full bg-slate-900/40 border border-white/5 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex items-center justify-between hover:bg-slate-800/60 hover:border-indigo-500/30 transition-all group/card text-left"
-                  >
-                    <div className="flex items-center gap-4 md:gap-8 min-w-0 flex-1">
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-[1rem] md:rounded-[1.5rem] flex items-center justify-center bg-indigo-500/10 text-indigo-400 flex-shrink-0">
-                        <User className="w-6 h-6 md:w-8 md:h-8" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-white font-black uppercase italic text-lg md:text-xl leading-none mb-1 md:mb-2 truncate">
-                          {group.studentName}
-                        </p>
-                        <p className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 md:mb-2">
-                          {group.course}
-                        </p>
+                {searchResults.map((group) => {
+                  const hasActiveLoan = group.instruments.some(inst => isItemLoaned(inst));
+                  return (
+                    <button
+                      key={group.studentName}
+                      type="button"
+                      onClick={() => handleSelectStudent(group)}
+                      className={`w-full bg-slate-900/40 border p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex items-center justify-between transition-all group/card text-left ${
+                        mode === 'out' && hasActiveLoan 
+                          ? 'border-amber-500/10 hover:bg-slate-800/40 hover:border-amber-500/30' 
+                          : 'border-white/5 hover:bg-slate-800/60 hover:border-indigo-500/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 md:gap-8 min-w-0 flex-1">
+                        <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[1rem] md:rounded-[1.5rem] flex items-center justify-center flex-shrink-0 ${
+                          mode === 'out' && hasActiveLoan 
+                            ? 'bg-amber-500/10 text-amber-400' 
+                            : 'bg-indigo-500/10 text-indigo-400'
+                        }`}>
+                          <User className="w-6 h-6 md:w-8 md:h-8" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                            <p className="text-white font-black uppercase italic text-lg md:text-xl leading-none truncate">
+                              {group.studentName}
+                            </p>
+                            {mode === 'out' && hasActiveLoan && (
+                              <span className="text-[7px] md:text-[9px] font-black bg-amber-500/15 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded-full uppercase tracking-widest flex items-center gap-1">
+                                <AlertCircle className="w-2.5 h-2.5" /> DEBE DEVOLVER PRIMERO
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 md:mb-2">
+                            {group.course}
+                          </p>
                         <div className="flex flex-wrap gap-1.5 md:gap-2">
                           {group.instruments.map((inst) => (
                             <span
@@ -312,7 +330,8 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                       <ArrowRight className="w-5 h-5 md:w-6 md:h-6 text-slate-700 group-hover/card:text-white transition-all" />
                     </div>
                   </button>
-                ))}
+                );
+              })}
 
                 {searchTerm && searchResults.length === 0 && (
                   <div className="py-12 md:py-20 text-center border-2 border-dashed border-white/5 rounded-[2rem] md:rounded-[3rem]">
@@ -349,124 +368,173 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                 </div>
               </div>
 
-              <p className="text-slate-500 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-center">
-                {mode === 'out' ? 'Selecciona el instrumento a retirar' : 'Selecciona el instrumento a devolver'}
-              </p>
+              {mode === 'out' && selectedStudent.instruments.some(inst => isItemLoaned(inst)) ? (
+                <div className="bg-amber-500/5 border-2 border-amber-500/20 p-8 md:p-12 rounded-[2rem] text-center space-y-6 animate-in zoom-in-95">
+                  <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-8 h-8 text-amber-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-xl font-black text-white uppercase italic tracking-tight">Préstamo Activo Detectado</h4>
+                    <p className="text-slate-400 text-xs font-semibold leading-relaxed max-w-md mx-auto">
+                      El estudiante <span className="text-white font-black">{selectedStudent.studentName}</span> ya tiene un instrumento en préstamo activo:
+                    </p>
+                    <div className="bg-slate-950/50 p-4 rounded-[1.2rem] border border-white/5 max-w-sm mx-auto mt-2 space-y-1">
+                      {selectedStudent.instruments.filter(isItemLoaned).map(inst => (
+                        <p key={inst.id} className="text-amber-400 font-bold uppercase text-xs">
+                          🎻 {inst.Instrumento} ({inst.Marca} - S/N: {inst.Serie || 'Sin serie'})
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-amber-500 font-bold text-xs uppercase tracking-widest bg-amber-500/10 py-3 px-6 rounded-full inline-block">
+                    ⚠️ Debe realizar la devolución (retorno) primero antes de solicitar otro.
+                  </p>
+                  <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('in');
+                        // Pre-select the instrument for return!
+                        const loanedInst = selectedStudent.instruments.find(isItemLoaned);
+                        if (loanedInst) {
+                          setSelectedItem(loanedInst);
+                        }
+                      }}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider px-8 py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/20"
+                    >
+                      <LogIn className="w-4 h-4" /> Ir a Retorno de Instrumento
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStudent(null)}
+                      className="bg-slate-950 hover:bg-slate-900 border border-white/5 text-slate-400 hover:text-white font-black text-xs uppercase tracking-wider px-8 py-4 rounded-[1.5rem] transition-all"
+                    >
+                      Volver a Buscar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-slate-500 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-center">
+                    {mode === 'out' ? 'Selecciona el instrumento a retirar' : 'Selecciona el instrumento a devolver'}
+                  </p>
 
-              <div className="space-y-3 md:space-y-4">
-                {selectedStudent.instruments
-                  .filter(inst => mode === 'in' ? isItemLoaned(inst) : true)
-                  .map((inst) => (
-                  <button
-                    key={String(inst.id)}
-                    type="button"
-                    onClick={() => handleSelectInstrument(inst)}
-                    className="w-full bg-slate-900/40 border border-white/5 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex items-center justify-between hover:bg-slate-800/60 hover:border-indigo-500/30 transition-all group/inst text-left"
-                  >
-                    <div className="flex items-center gap-4 md:gap-8 min-w-0">
-                      <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[1rem] md:rounded-[1.5rem] flex items-center justify-center flex-shrink-0 ${isItemLoaned(inst) ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
-                        <Music className="w-6 h-6 md:w-8 md:h-8" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-white font-black uppercase italic text-lg md:text-xl leading-none mb-1 md:mb-2 truncate">{inst.Instrumento}</p>
-                        <div className="flex flex-wrap gap-1.5 md:gap-3">
-                          <span className="text-[8px] md:text-[10px] font-black text-indigo-500 uppercase tracking-widest">{inst.Marca}</span>
-                          <span className="text-[8px] md:text-[10px] font-bold text-slate-600 hidden sm:inline">|</span>
-                          <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest">{inst.Modelo}</span>
-                          {inst.Serie && (
-                            <>
+                  <div className="space-y-3 md:space-y-4">
+                    {selectedStudent.instruments
+                      .filter(inst => mode === 'in' ? isItemLoaned(inst) : true)
+                      .map((inst) => (
+                      <button
+                        key={String(inst.id)}
+                        type="button"
+                        onClick={() => handleSelectInstrument(inst)}
+                        className="w-full bg-slate-900/40 border border-white/5 p-4 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] flex items-center justify-between hover:bg-slate-800/60 hover:border-indigo-500/30 transition-all group/inst text-left"
+                      >
+                        <div className="flex items-center gap-4 md:gap-8 min-w-0">
+                          <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[1rem] md:rounded-[1.5rem] flex items-center justify-center flex-shrink-0 ${isItemLoaned(inst) ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                            <Music className="w-6 h-6 md:w-8 md:h-8" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white font-black uppercase italic text-lg md:text-xl leading-none mb-1 md:mb-2 truncate">{inst.Instrumento}</p>
+                            <div className="flex flex-wrap gap-1.5 md:gap-3">
+                              <span className="text-[8px] md:text-[10px] font-black text-indigo-500 uppercase tracking-widest">{inst.Marca}</span>
                               <span className="text-[8px] md:text-[10px] font-bold text-slate-600 hidden sm:inline">|</span>
-                              <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest block sm:inline w-full sm:w-auto">S/N: {inst.Serie}</span>
-                            </>
+                              <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest">{inst.Modelo}</span>
+                              {inst.Serie && (
+                                <>
+                                  <span className="text-[8px] md:text-[10px] font-bold text-slate-600 hidden sm:inline">|</span>
+                                  <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest block sm:inline w-full sm:w-auto">S/N: {inst.Serie}</span>
+                                </>
+                              )}
+                            </div>
+                            <p className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1 md:mt-2 ${isItemLoaned(inst) ? 'text-amber-500' : 'text-emerald-500'}`}>
+                              {isItemLoaned(inst) ? '📍 EN HOGAR' : '📍 EN SALA'}
+                            </p>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 ml-2 text-slate-700 group-hover/inst:text-white transition-all" />
+                      </button>
+                    ))}
+
+                    {mode === 'out' && selectedStudent.instruments.length === 0 && (
+                      <div className="space-y-4 md:space-y-6">
+                        <div className="py-6 md:py-8 text-center border-2 border-dashed border-white/5 rounded-[2rem] md:rounded-[3rem] px-4">
+                          <AlertCircle className="w-8 h-8 md:w-10 md:h-10 text-amber-500 mx-auto mb-3 md:mb-4" />
+                          <p className="text-slate-300 font-black uppercase italic tracking-[0.2em] mb-1 md:mb-2 text-sm md:text-base">
+                            Estudiante sin instrumento
+                          </p>
+                          <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                            Busca y selecciona un instrumento disponible:
+                          </p>
+                        </div>
+
+                        <div className="relative group">
+                          <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 text-slate-700 group-focus-within:text-indigo-500 transition-colors" />
+                          <input
+                            type="text"
+                            className="w-full bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-[1.5rem] md:rounded-[2rem] py-4 md:py-5 pl-12 md:pl-16 pr-6 md:pr-8 text-sm md:text-lg font-black text-white placeholder:text-slate-800 outline-none transition-all uppercase shadow-inner"
+                            placeholder="Buscar por nombre, marca o serie..."
+                            value={instrumentSearchTerm}
+                            onChange={(e) => setInstrumentSearchTerm(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-3 md:space-y-4 max-h-[300px] md:max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                          {instrumentSearchTerm.length > 1 ? (
+                            inventory
+                              .filter(inst => !isItemLoaned(inst))
+                              .filter(inst => 
+                                safeNorm(inst.Instrumento).includes(safeNorm(instrumentSearchTerm)) ||
+                                safeNorm(inst.Marca).includes(safeNorm(instrumentSearchTerm)) ||
+                                safeNorm(inst.Serie).includes(safeNorm(instrumentSearchTerm))
+                              )
+                              .slice(0, 15)
+                              .map((inst) => (
+                                <button
+                                  key={String(inst.id)}
+                                  type="button"
+                                  onClick={() => handleSelectInstrument(inst)}
+                                  className="w-full bg-slate-900/40 border border-white/5 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-between hover:bg-slate-800/60 hover:border-indigo-500/30 transition-all group/newinst text-left"
+                                >
+                                  <div className="flex items-center gap-4 md:gap-6 min-w-0">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-[0.8rem] md:rounded-[1rem] flex items-center justify-center bg-indigo-500/10 text-indigo-400 flex-shrink-0">
+                                      <Music className="w-5 h-5 md:w-6 md:h-6" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-white font-black uppercase italic text-base md:text-lg leading-none mb-1 truncate">{inst.Instrumento}</p>
+                                      <div className="flex flex-wrap gap-1.5 md:gap-2">
+                                        <span className="text-[8px] md:text-[9px] font-black text-indigo-500 uppercase tracking-widest">{inst.Marca}</span>
+                                        <span className="text-[8px] md:text-[9px] font-bold text-slate-600 hidden sm:inline">|</span>
+                                        <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest">{inst.Modelo}</span>
+                                        {inst.Serie && (
+                                          <>
+                                            <span className="text-[8px] md:text-[9px] font-bold text-slate-600 hidden sm:inline">|</span>
+                                            <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest block sm:inline w-full sm:w-auto">S/N: {inst.Serie}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 text-slate-700 group-hover/newinst:text-white flex-shrink-0 ml-2 transition-all" />
+                                </button>
+                              ))
+                          ) : (
+                            <p className="text-center text-slate-600 text-xs font-bold uppercase tracking-widest mt-4">Escribe al menos 2 letras para buscar un instrumento.</p>
                           )}
                         </div>
-                        <p className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1 md:mt-2 ${isItemLoaned(inst) ? 'text-amber-500' : 'text-emerald-500'}`}>
-                          {isItemLoaned(inst) ? '📍 EN HOGAR' : '📍 EN SALA'}
+                      </div>
+                    )}
+
+                    {mode === 'in' && selectedStudent.instruments.filter(i => isItemLoaned(i)).length === 0 && (
+                      <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
+                        <AlertCircle className="w-10 h-10 text-slate-700 mx-auto mb-4" />
+                        <p className="text-slate-700 font-black uppercase italic tracking-[0.2em]">
+                          Este estudiante no tiene instrumentos prestados
                         </p>
                       </div>
-                    </div>
-                    <ArrowRight className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0 ml-2 text-slate-700 group-hover/inst:text-white transition-all" />
-                  </button>
-                ))}
-
-                {mode === 'out' && selectedStudent.instruments.length === 0 && (
-                  <div className="space-y-4 md:space-y-6">
-                    <div className="py-6 md:py-8 text-center border-2 border-dashed border-white/5 rounded-[2rem] md:rounded-[3rem] px-4">
-                      <AlertCircle className="w-8 h-8 md:w-10 md:h-10 text-amber-500 mx-auto mb-3 md:mb-4" />
-                      <p className="text-slate-300 font-black uppercase italic tracking-[0.2em] mb-1 md:mb-2 text-sm md:text-base">
-                        Estudiante sin instrumento
-                      </p>
-                      <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-widest">
-                        Busca y selecciona un instrumento disponible:
-                      </p>
-                    </div>
-
-                    <div className="relative group">
-                      <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 text-slate-700 group-focus-within:text-indigo-500 transition-colors" />
-                      <input
-                        type="text"
-                        className="w-full bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-[1.5rem] md:rounded-[2rem] py-4 md:py-5 pl-12 md:pl-16 pr-6 md:pr-8 text-sm md:text-lg font-black text-white placeholder:text-slate-800 outline-none transition-all uppercase shadow-inner"
-                        placeholder="Buscar por nombre, marca o serie..."
-                        value={instrumentSearchTerm}
-                        onChange={(e) => setInstrumentSearchTerm(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="space-y-3 md:space-y-4 max-h-[300px] md:max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {instrumentSearchTerm.length > 1 ? (
-                        inventory
-                          .filter(inst => !isItemLoaned(inst))
-                          .filter(inst => 
-                            safeNorm(inst.Instrumento).includes(safeNorm(instrumentSearchTerm)) ||
-                            safeNorm(inst.Marca).includes(safeNorm(instrumentSearchTerm)) ||
-                            safeNorm(inst.Serie).includes(safeNorm(instrumentSearchTerm))
-                          )
-                          .slice(0, 15)
-                          .map((inst) => (
-                            <button
-                              key={String(inst.id)}
-                              type="button"
-                              onClick={() => handleSelectInstrument(inst)}
-                              className="w-full bg-slate-900/40 border border-white/5 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-between hover:bg-slate-800/60 hover:border-indigo-500/30 transition-all group/newinst text-left"
-                            >
-                              <div className="flex items-center gap-4 md:gap-6 min-w-0">
-                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[0.8rem] md:rounded-[1rem] flex items-center justify-center bg-indigo-500/10 text-indigo-400 flex-shrink-0">
-                                  <Music className="w-5 h-5 md:w-6 md:h-6" />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-white font-black uppercase italic text-base md:text-lg leading-none mb-1 truncate">{inst.Instrumento}</p>
-                                  <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                    <span className="text-[8px] md:text-[9px] font-black text-indigo-500 uppercase tracking-widest">{inst.Marca}</span>
-                                    <span className="text-[8px] md:text-[9px] font-bold text-slate-600 hidden sm:inline">|</span>
-                                    <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest">{inst.Modelo}</span>
-                                    {inst.Serie && (
-                                      <>
-                                        <span className="text-[8px] md:text-[9px] font-bold text-slate-600 hidden sm:inline">|</span>
-                                        <span className="text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-widest block sm:inline w-full sm:w-auto">S/N: {inst.Serie}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <ArrowRight className="w-4 h-4 md:w-5 md:h-5 text-slate-700 group-hover/newinst:text-white flex-shrink-0 ml-2 transition-all" />
-                            </button>
-                          ))
-                      ) : (
-                        <p className="text-center text-slate-600 text-xs font-bold uppercase tracking-widest mt-4">Escribe al menos 2 letras para buscar un instrumento.</p>
-                      )}
-                    </div>
+                    )}
                   </div>
-                )}
-
-                {mode === 'in' && selectedStudent.instruments.filter(i => isItemLoaned(i)).length === 0 && (
-                  <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
-                    <AlertCircle className="w-10 h-10 text-slate-700 mx-auto mb-4" />
-                    <p className="text-slate-700 font-black uppercase italic tracking-[0.2em]">
-                      Este estudiante no tiene instrumentos prestados
-                    </p>
-                  </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           )}
 

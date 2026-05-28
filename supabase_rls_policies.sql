@@ -99,6 +99,14 @@ BEGIN
     RAISE EXCEPTION 'El nombre del estudiante y el curso son campos obligatorios.';
   END IF;
 
+  -- 0. Verificar si el estudiante ya tiene un instrumento en préstamo activo
+  IF EXISTS (
+    SELECT 1 FROM public.inventory 
+    WHERE UPPER(TRIM("Estudiante")) = UPPER(TRIM(p_student_name)) AND "Prestado" = 'SÍ'
+  ) THEN
+    RAISE EXCEPTION 'El estudiante % ya tiene un instrumento en préstamo activo. Debe devolverlo antes de solicitar otro.', p_student_name;
+  END IF;
+
   -- Intentar parsear el año y mes desde la fecha provista (formato YYYY-MM-DD esperado)
   BEGIN
     v_year := split_part(p_fecha, '-', 1)::integer;
