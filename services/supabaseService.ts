@@ -3,23 +3,46 @@ import { InventoryItem, MovementRecord, Student } from '../types.ts';
 import { globalNormalize, cleanNameForMatching, areWordsSimilar } from '../utils.ts';
 
 export const fetchInitialData = async () => {
-  const [invRes, histRes, studRes] = await Promise.all([
-    supabase.from('inventory').select('*'),
-    supabase.from('history').select('*').order('created_at', { ascending: false }),
-    supabase.from('students').select('*').order('name', { ascending: true })
-  ]);
-  
-  if (invRes.error) throw invRes.error;
+  try {
+    const [invRes, histRes, studRes] = await Promise.all([
+      supabase.from('inventory').select('*'),
+      supabase.from('history').select('*').order('created_at', { ascending: false }),
+      supabase.from('students').select('*').order('name', { ascending: true })
+    ]);
+    
+    if (invRes.error) throw invRes.error;
 
-  // Si hay error de permisos (esperable en modo anónimo), devolvemos listas vacías sin lanzar excepción
-  const history = histRes.error ? [] : (histRes.data as MovementRecord[]) || [];
-  const students = studRes.error ? [] : (studRes.data as Student[]) || [];
+    // Si hay error de permisos (esperable en modo anónimo), devolvemos listas vacías sin lanzar excepción
+    const history = histRes.error ? [] : (histRes.data as MovementRecord[]) || [];
+    const students = studRes.error ? [] : (studRes.data as Student[]) || [];
 
-  return {
-    inventory: (invRes.data as InventoryItem[]) || [],
-    history,
-    students
-  };
+    const data = {
+      inventory: (invRes.data as InventoryItem[]) || [],
+      history,
+      students
+    };
+
+    // Resguardar una copia local en caché para soporte offline
+    try {
+      localStorage.setItem('oswt_offline_cache', JSON.stringify(data));
+    } catch (e) {
+      console.warn("No se pudo guardar la copia de seguridad offline en localStorage:", e);
+    }
+
+    return data;
+  } catch (error) {
+    console.warn("Error al conectar con Supabase. Intentando recuperar resguardo local offline...", error);
+    // Recuperar resguardo local offline de localStorage
+    try {
+      const cached = localStorage.getItem('oswt_offline_cache');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error("Error al leer el resguardo local offline:", e);
+    }
+    throw error;
+  }
 };
 
 export const syncExcelData = async (

@@ -69,6 +69,44 @@ const App: React.FC = () => {
   const [selectedInstrument, setSelectedInstrument] = useState<InventoryItem | null>(null);
   const [showOverdueAlerts, setShowOverdueAlerts] = useState(false);
 
+  const handleDownloadBackup = async () => {
+    try {
+      const [invRes, histRes, studRes] = await Promise.all([
+        supabase.from('inventory').select('*'),
+        supabase.from('history').select('*'),
+        supabase.from('students').select('*')
+      ]);
+
+      if (invRes.error) throw invRes.error;
+      
+      const backupData = {
+        backup_date: new Date().toISOString(),
+        version: "1.2.03 ExeApp",
+        inventory: invRes.data || [],
+        history: histRes.data || [],
+        students: studRes.data || []
+      };
+
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.download = `OSWT_respaldo_inventario_${dateStr}.json`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      alert("Copia de seguridad descargada exitosamente.");
+    } catch (error: any) {
+      alert("Error al descargar la copia de seguridad: " + error.message);
+    }
+  };
+
   // Supabase Auth Session
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -309,6 +347,7 @@ const App: React.FC = () => {
           toggleTheme={toggleTheme}
           isAuthenticated={!!session}
           onSignOut={handleSignOut}
+          onDownloadBackup={handleDownloadBackup}
         />
       )}
 

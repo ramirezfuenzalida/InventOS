@@ -279,53 +279,53 @@ const DirectoryView: React.FC = () => {
                         className="hidden"
                     />
 
-                    <section className="bg-[#0A0C14] p-8 md:p-16 rounded-[40px] md:rounded-[80px] border border-white/5 flex flex-col md:flex-row items-center gap-10 md:gap-20 relative overflow-hidden group shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] border-b-indigo-500/20">
+                    <section className="bg-[#0A0C14] p-6 sm:p-8 md:p-16 rounded-3xl md:rounded-[80px] border border-white/5 flex flex-col md:flex-row items-center gap-10 md:gap-20 relative overflow-hidden group shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] border-b-indigo-500/20">
                         <div className="absolute top-0 right-0 w-64 md:w-[600px] h-64 md:h-[600px] bg-indigo-600/10 blur-[80px] md:blur-[180px] rounded-full -mr-20 md:-mr-40 -mt-20 md:-mt-40"></div>
                         <div className="absolute bottom-0 left-0 w-48 md:w-[400px] h-48 md:h-[400px] bg-amber-500/5 blur-[60px] md:blur-[120px] rounded-full -ml-16 md:-ml-32 -mb-16 md:-mb-32"></div>
 
                         <div className="relative shrink-0">
                             <div
-                                className="relative group/bio cursor-pointer w-48 h-48 md:w-80 md:h-80 rounded-[36px] md:rounded-[72px] overflow-hidden border-4 border-white/10 shadow-[0_24px_48px_rgba(0,0,0,0.5)] bg-slate-900 flex items-center justify-center transition-all group-hover/bio:scale-[1.03] duration-1000"
+                                className="relative group/bio cursor-pointer w-40 h-40 sm:w-48 sm:h-48 md:w-80 md:h-80 rounded-2xl sm:rounded-[36px] md:rounded-[72px] overflow-hidden border-4 border-white/10 shadow-[0_24px_48px_rgba(0,0,0,0.5)] bg-slate-900 flex items-center justify-center transition-all group-hover/bio:scale-[1.03] duration-1000"
                                 onClick={() => !uploading && fileInputRef.current?.click()}
                             >
                                 {selectedStudent.photo_url ? (
                                     <img src={selectedStudent.photo_url} alt={selectedStudent.name} className="w-full h-full object-cover object-center scale-110 group-hover/bio:scale-100 transition-transform duration-[2s]" />
                                 ) : (
                                     <div className="text-center">
-                                        <Camera className="w-24 h-24 text-slate-800 mx-auto mb-6" />
-                                        <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">SUBIR FOTO</p>
+                                        <Camera className="w-16 h-16 sm:w-24 sm:h-24 text-slate-800 mx-auto mb-4 sm:mb-6" />
+                                        <p className="text-[9px] sm:text-[10px] font-black text-slate-700 uppercase tracking-widest">SUBIR FOTO</p>
                                     </div>
                                 )}
 
                                 {uploading && (
                                     <div className="absolute inset-0 bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center z-20">
-                                        <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6"></div>
-                                        <span className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.3em]">REVELANDO...</span>
+                                        <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4 sm:mb-6"></div>
+                                        <span className="text-[10px] sm:text-[11px] font-black text-indigo-400 uppercase tracking-[0.3em]">REVELANDO...</span>
                                     </div>
                                 )}
 
                                 <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/90 to-violet-600/80 opacity-0 group-hover/bio:opacity-100 transition-all duration-500 flex flex-col items-center justify-center backdrop-blur-sm">
-                                    <Camera className="w-14 h-14 text-white mb-4 animate-bounce" />
-                                    <span className="text-[12px] font-black text-white uppercase tracking-widest">ACTUALIZAR RETRATO</span>
+                                    <Camera className="w-10 h-10 sm:w-14 sm:h-14 text-white mb-3 sm:mb-4 animate-bounce" />
+                                    <span className="text-[10px] sm:text-[12px] font-black text-white uppercase tracking-widest">ACTUALIZAR RETRATO</span>
                                 </div>
                             </div>
 
-                            <div className="absolute -bottom-6 -right-6 flex flex-col gap-4 z-40">
+                            <div className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 flex flex-col gap-3 sm:gap-4 z-40">
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); if (!uploading) fileInputRef.current?.click(); }}
-                                    className="bg-indigo-600 text-white p-7 rounded-[32px] shadow-3xl border-8 border-[#0A0C14] hover:rotate-[25deg] transition-all hover:bg-amber-500 cursor-pointer group/upload"
+                                    className="bg-indigo-600 text-white p-5 sm:p-7 rounded-2xl sm:rounded-[32px] shadow-3xl border-4 sm:border-8 border-[#0A0C14] hover:rotate-[25deg] transition-all hover:bg-amber-500 cursor-pointer group/upload"
                                 >
-                                    {uploading ? <Clock className="w-8 h-8 animate-spin" /> : <UploadIcon className="w-8 h-8 group-hover/upload:scale-110 transition-transform" />}
+                                    {uploading ? <Clock className="w-6 h-6 sm:w-8 sm:h-8 animate-spin" /> : <UploadIcon className="w-6 h-6 sm:w-8 sm:h-8 group-hover/upload:scale-110 transition-transform" />}
                                 </button>
                                 {selectedStudent.photo_url && (
                                     <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); handleDeletePhoto(); }}
-                                        className="bg-red-600 text-white p-5 rounded-3xl shadow-2xl border-4 border-[#0A0C14] hover:scale-110 transition-all hover:bg-red-500 cursor-pointer flex items-center justify-center animate-in zoom-in duration-300"
+                                        className="bg-red-600 text-white p-3.5 sm:p-5 rounded-xl sm:rounded-3xl shadow-2xl border-4 border-[#0A0C14] hover:scale-110 transition-all hover:bg-red-500 cursor-pointer flex items-center justify-center animate-in zoom-in duration-300"
                                         title="Eliminar Foto"
                                     >
-                                        <Trash2 className="w-6 h-6" />
+                                        <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </button>
                                 )}
                             </div>
@@ -337,24 +337,24 @@ const DirectoryView: React.FC = () => {
                                     <div className="h-0.5 w-8 md:w-12 bg-amber-500/40"></div>
                                     <p className="text-amber-500 font-black text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.7em]">MÚSICO DE ORQUESTA</p>
                                 </div>
-                                <h3 className="text-4xl md:text-[5.5rem] font-black text-white italic tracking-tighter uppercase leading-[0.85] md:leading-[0.7] drop-shadow-2xl">{selectedStudent.name}</h3>
+                                <h3 className="text-2xl sm:text-4xl md:text-[5.5rem] font-black text-white italic tracking-tighter uppercase leading-[0.85] md:leading-[0.7] drop-shadow-2xl">{selectedStudent.name}</h3>
                             </div>
-                            <div className="flex flex-wrap justify-center md:justify-start gap-4 md:gap-8">
-                                <div className="bg-indigo-600/10 text-indigo-300 border border-indigo-500/20 px-6 md:px-12 py-3 md:py-5 rounded-[20px] md:rounded-[32px] flex items-center gap-3 md:gap-4 transition-all hover:bg-indigo-500/20">
-                                    <Music className="w-4 h-4 md:w-6 md:h-6" />
-                                    <span className="text-xs md:text-base font-black uppercase tracking-[0.1em] md:tracking-[0.2em]">{selectedStudent.instrument || 'SIN INSTRUMENTO'}</span>
+                            <div className="flex flex-wrap justify-center md:justify-start gap-3 sm:gap-4 md:gap-8">
+                                <div className="bg-indigo-600/10 text-indigo-300 border border-indigo-500/20 px-4 sm:px-6 md:px-12 py-2.5 sm:py-3 md:py-5 rounded-xl sm:rounded-[20px] md:rounded-[32px] flex items-center gap-2 sm:gap-3 md:gap-4 transition-all hover:bg-indigo-500/20">
+                                    <Music className="w-4 h-4 sm:w-6 sm:h-6" />
+                                    <span className="text-[10px] sm:text-xs md:text-base font-black uppercase tracking-[0.1em] md:tracking-[0.2em]">{selectedStudent.instrument || 'SIN INSTRUMENTO'}</span>
                                 </div>
-                                <div className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-6 md:px-12 py-3 md:py-5 rounded-[20px] md:rounded-[32px] flex items-center gap-3 md:gap-4 transition-all hover:bg-amber-500/20">
-                                    <MapPin className="w-4 h-4 md:w-6 md:h-6" />
-                                    <span className="text-xs md:text-base font-black uppercase tracking-[0.1em] md:tracking-[0.2em]">{selectedStudent.course}</span>
+                                <div className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-4 sm:px-6 md:px-12 py-2.5 sm:py-3 md:py-5 rounded-xl sm:rounded-[20px] md:rounded-[32px] flex items-center gap-2 sm:gap-3 md:gap-4 transition-all hover:bg-amber-500/20">
+                                    <MapPin className="w-4 h-4 sm:w-6 sm:h-6" />
+                                    <span className="text-[10px] sm:text-xs md:text-base font-black uppercase tracking-[0.1em] md:tracking-[0.2em]">{selectedStudent.course}</span>
                                 </div>
                             </div>
                         </div>
                     </section>
 
                     {/* Information Grid - Simplified Luxury */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                        <section className="bg-slate-950/40 p-10 md:p-16 rounded-[40px] md:rounded-[72px] border border-white/5 space-y-10 md:space-y-14 shadow-3xl hover:border-indigo-500/20 transition-all group/info relative overflow-hidden">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10 md:gap-16">
+                        <section className="bg-slate-950/40 p-6 sm:p-10 md:p-16 rounded-3xl md:rounded-[72px] border border-white/5 space-y-6 sm:space-y-10 md:space-y-14 shadow-3xl hover:border-indigo-500/20 transition-all group/info relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full"></div>
                             <h4 className="text-[10px] md:text-[13px] font-black text-indigo-400 uppercase tracking-[0.4em] md:tracking-[0.7em] flex items-center gap-4 md:gap-6">
                                 <div className="w-12 md:w-16 h-px bg-indigo-500/40 group-hover/info:w-24 transition-all duration-700"></div> IDENTIDAD
@@ -378,7 +378,7 @@ const DirectoryView: React.FC = () => {
                             </div>
                         </section>
 
-                        <section className="bg-slate-950/40 p-10 md:p-16 rounded-[40px] md:rounded-[72px] border border-white/5 space-y-10 md:space-y-14 shadow-3xl hover:border-amber-500/20 transition-all group/info relative overflow-hidden">
+                        <section className="bg-slate-950/40 p-6 sm:p-10 md:p-16 rounded-3xl md:rounded-[72px] border border-white/5 space-y-6 sm:space-y-10 md:space-y-14 shadow-3xl hover:border-amber-500/20 transition-all group/info relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full"></div>
                             <h4 className="text-[10px] md:text-[13px] font-black text-amber-500 uppercase tracking-[0.4em] md:tracking-[0.7em] flex items-center gap-4 md:gap-6">
                                 <div className="w-12 md:w-16 h-px bg-amber-500/40 group-hover/info:w-24 transition-all duration-700"></div> SEGURIDAD
@@ -406,7 +406,7 @@ const DirectoryView: React.FC = () => {
     if (viewMode === 'edit') {
         return (
             <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
-                <div className="bg-slate-900/60 backdrop-blur-2xl p-16 rounded-[80px] border border-white/5 shadow-[0_64px_128px_rgba(0,0,0,0.8)]">
+                <div className="bg-slate-900/60 backdrop-blur-2xl p-6 sm:p-16 rounded-3xl sm:rounded-[80px] border border-white/5 shadow-[0_64px_128px_rgba(0,0,0,0.8)]">
                     <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-20 relative z-10">
                         <div className="flex items-center gap-8">
                             <button onClick={() => setViewMode(selectedStudent ? 'detail' : 'grid')} className="p-5 bg-slate-950 hover:bg-slate-900 rounded-[28px] transition-all border border-white/10 hover:border-indigo-500/50">
@@ -549,7 +549,7 @@ const DirectoryView: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="p-16 bg-white/[0.02] rounded-[64px] border border-white/5 space-y-12 group/section relative overflow-hidden">
+                            <div className="p-6 sm:p-16 bg-white/[0.02] rounded-3xl sm:rounded-[64px] border border-white/5 space-y-6 sm:space-y-12 group/section relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 blur-3xl rounded-full"></div>
                                 <h4 className="text-[12px] font-black text-amber-500 uppercase tracking-[0.6em] flex items-center gap-6">
                                     <div className="w-16 h-px bg-amber-500/30 group-hover/section:w-24 transition-all duration-700"></div> PROTOCOLO DE CONFIANZA
@@ -634,11 +634,11 @@ const DirectoryView: React.FC = () => {
                     </button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-10">
                 {filteredStudents.map((student, idx) => (
                     <div
                         key={student.id}
-                        className="group relative bg-[#0B0F1A] border border-white/5 p-10 rounded-[64px] hover:bg-[#121828] transition-all hover:-translate-y-3 cursor-pointer shadow-2xl animate-in fade-in zoom-in duration-500 overflow-hidden"
+                        className="group relative bg-[#0B0F1A] border border-white/5 p-6 sm:p-10 rounded-[32px] sm:rounded-[64px] hover:bg-[#121828] transition-all hover:-translate-y-3 cursor-pointer shadow-2xl animate-in fade-in zoom-in duration-500 overflow-hidden"
                         style={{ animationDelay: `${idx * 40}ms` }}
                         onClick={() => handleSelectStudent(student)}
                     >

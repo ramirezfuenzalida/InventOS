@@ -7,6 +7,7 @@ import {
   QrCode,
   Scan,
   FileUp,
+  Download,
   Trash2,
   X,
   Sun,
@@ -32,6 +33,7 @@ interface SidebarProps {
   toggleTheme: () => void;
   isAuthenticated: boolean;
   onSignOut: () => void;
+  onDownloadBackup?: () => void;
 }
 
 const Logo = ({ setViewMode }: { setViewMode: (mode: string) => void }) => (
@@ -59,7 +61,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme,
   toggleTheme,
   isAuthenticated,
-  onSignOut
+  onSignOut,
+  onDownloadBackup
 }) => {
   return (
     <>
@@ -94,6 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <>
                 <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Herramientas</div>
                 <label className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-indigo-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all"><FileUp className="w-5 h-5 mr-3" /> Actualizar Excel<input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} /></label>
+                <button onClick={() => { onDownloadBackup?.(); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-emerald-400 hover:text-white hover:bg-white/5 transition-all"><Download className="w-5 h-5 mr-3" /> Descargar Resguardo</button>
                 <button onClick={() => { setShowHistoryDeleteConfirm(true); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all"><Trash2 className="w-5 h-5 mr-3" /> Borrar Reportes</button>
                 
                 <button 
