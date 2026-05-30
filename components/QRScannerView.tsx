@@ -116,13 +116,17 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
         setSessions(mapped);
 
         // Restaurar sesión activa desde localStorage (solo el ID activo se guarda local)
-        const lastActive = localStorage.getItem(STORAGE_KEY);
-        if (lastActive) {
-          const session = mapped.find(s => s.id === lastActive);
-          if (session) {
-            setActiveSessionId(session.id);
-            setScannedIds(new Set(session.scannedIds));
+        try {
+          const lastActive = localStorage.getItem(STORAGE_KEY);
+          if (lastActive) {
+            const session = mapped.find(s => s.id === lastActive);
+            if (session) {
+              setActiveSessionId(session.id);
+              setScannedIds(new Set(session.scannedIds));
+            }
           }
+        } catch (e) {
+          console.warn("No se pudo leer la sesión activa desde localStorage:", e);
         }
       }
       setIsLoadingSessions(false);
@@ -187,7 +191,11 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
       setSessions(prev => [newSession, ...prev]);
       setActiveSessionId(sessionId);
       setScannedIds(new Set());
-      localStorage.setItem(STORAGE_KEY, sessionId);
+      try {
+        localStorage.setItem(STORAGE_KEY, sessionId);
+      } catch (e) {
+        console.warn("No se pudo guardar la sesión activa en localStorage:", e);
+      }
       setShowSessionManager(false);
       setSessionName('');
     }
@@ -210,7 +218,11 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
       setActiveSessionId(session.id);
       setScannedIds(new Set(session.scannedIds));
     }
-    localStorage.setItem(STORAGE_KEY, session.id);
+    try {
+      localStorage.setItem(STORAGE_KEY, session.id);
+    } catch (e) {
+      console.warn("No se pudo guardar la sesión activa en localStorage:", e);
+    }
     setShowSessionManager(false);
   };
 
@@ -220,7 +232,11 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
     if (activeSessionId === sessionId) {
       setActiveSessionId(null);
       setScannedIds(new Set());
-      localStorage.removeItem(STORAGE_KEY);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        console.warn("No se pudo eliminar la sesión activa de localStorage:", e);
+      }
     }
   };
 
