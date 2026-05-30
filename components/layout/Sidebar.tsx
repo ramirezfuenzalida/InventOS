@@ -12,7 +12,8 @@ import {
   Sun,
   Moon,
   LogOut,
-  CalendarDays
+  CalendarDays,
+  Users
 } from 'lucide-react';
 
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
@@ -83,6 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button onClick={() => { setViewMode('reports'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><BarChart3 className="w-5 h-5 mr-3" /> Reportes</button>
             
             <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Alumnos</div>
+            <button onClick={() => { setViewMode('directory'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'directory' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><Users className="w-5 h-5 mr-3" /> Lista de estudiantes</button>
             <button onClick={() => { setViewMode('student-check'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'student-check' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><UserCheck className="w-5 h-5 mr-3" /> Salida/Retorno</button>
             <button onClick={() => { setViewMode('qr-access'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'qr-access' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><QrCode className="w-5 h-5 mr-3" /> Acceso QR</button>
             <button onClick={() => { setViewMode('qr-scanner'); setIsMobileMenuOpen(false); }} className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl transition-all ${viewMode === 'qr-scanner' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}><Scan className="w-5 h-5 mr-3" /> Escáner QR</button>
