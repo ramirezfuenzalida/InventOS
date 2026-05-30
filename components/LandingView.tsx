@@ -699,10 +699,6 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
               </span>
             </div>
           </div>
-
-          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest text-center md:text-right">
-            Desarrollado con ❤️ para la modernización e innovación escolar en la Orquesta Sinfónica William Taylor.
-          </p>
         </div>
       </footer>
     </div>

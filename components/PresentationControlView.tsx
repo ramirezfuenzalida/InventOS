@@ -694,7 +694,7 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
             CONTROL DE <span className="text-indigo-500">PRESENTACIONES</span>
           </h1>
           <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em] mt-2">
-            Registro y control QR para salidas grupales a conciertos y desfiles
+            Registro y control QR para salidas grupales a conciertos y actividades
           </p>
         </div>
 
