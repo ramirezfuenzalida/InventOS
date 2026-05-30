@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Shield, Clock, Users, ArrowRight, Music, BarChart3, QrCode, FileText, 
   ChevronRight, Sparkles, Check, CheckCircle2, PhoneCall, Building2, 
-  Smartphone, Volume2, Award, FileDown, Lock, Mail, Phone, User
+  Smartphone, Volume2, Award, FileDown, Lock, Mail, Phone, User, Play
 } from 'lucide-react';
 
 interface LandingViewProps {
@@ -23,6 +23,9 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
   const [submitted, setSubmitted] = useState(false);
 
   const logoUrl = '/logo_orquesta_sinfonica_wt.png';
+  const heroViolinUrl = '/cyber_violin_hero.png';
+  const mobileScanUrl = '/mobile_qr_scan.png';
+  const dashboardPreviewUrl = '/dashboard_preview.png';
 
   const handleQuoteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,20 +81,20 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative pt-12 pb-24 md:py-32 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+      <section className="relative pt-12 pb-24 md:py-32 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-20 items-center">
         <div className="lg:col-span-7 space-y-8 text-left relative z-10">
-          <div className="inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">
-            <Sparkles className="w-3.5 h-3.5" /> Tecnología Educativa Premium
+          <div className="inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">
+            <Sparkles className="w-3.5 h-3.5 animate-spin duration-3000" /> Tecnología Educativa de Vanguardia
           </div>
           
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white italic uppercase tracking-tighter leading-[0.9] drop-shadow-lg">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] font-black text-white italic uppercase tracking-tighter leading-[0.85] drop-shadow-2xl">
             El sonido del orden. <br />
-            <span className="text-indigo-400 bg-gradient-to-r from-indigo-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">Protege y Gestiona</span> <br />
+            <span className="text-transparent bg-gradient-to-r from-indigo-400 via-indigo-300 to-emerald-400 bg-clip-text">Protege y Gestiona</span> <br />
             los activos de tu colegio.
           </h1>
 
           <p className="text-slate-400 font-medium text-base sm:text-lg leading-relaxed max-w-2xl">
-            La plataforma líder diseñada para digitalizar inventarios, rastrear préstamos a hogares al <strong>0% de pérdida</strong> y simplificar eventos en terreno de forma inteligente y automatizada.
+            La plataforma definitiva para digitalizar inventarios, rastrear préstamos a hogares con **cero pérdidas** y simplificar traslados a eventos en terreno en segundos.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -99,112 +102,76 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
               href="#cotizar" 
               className="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm uppercase tracking-widest px-8 py-5 rounded-[1.8rem] transition-all shadow-xl shadow-indigo-600/25 flex items-center justify-center gap-3 hover:scale-105 active:scale-95 border-t border-white/10 text-center"
             >
-              <PhoneCall className="w-5 h-5" /> Agendar Demo Gratuita
+              <PhoneCall className="w-5 h-5 animate-bounce" /> Agendar Demo Gratuita
             </a>
             <button 
               onClick={onLoginClick}
               className="bg-slate-900/50 hover:bg-slate-800/80 border border-white/10 text-slate-300 hover:text-white font-black text-sm uppercase tracking-widest px-8 py-5 rounded-[1.8rem] transition-all flex items-center justify-center gap-2"
             >
-              Ingreso Monitores <ArrowRight className="w-5 h-5" />
+              Ingreso Personal <ArrowRight className="w-5 h-5" />
             </button>
           </div>
 
           <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/5 max-w-lg">
             <div>
-              <p className="text-3xl font-black text-white leading-none">0%</p>
+              <p className="text-3xl sm:text-4xl font-black text-white leading-none">0%</p>
               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Pérdida de Equipos</p>
             </div>
             <div>
-              <p className="text-3xl font-black text-indigo-400 leading-none">95%</p>
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Ahorro Administrativo</p>
+              <p className="text-3xl sm:text-4xl font-black text-indigo-400 leading-none">95%</p>
+              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Ahorro de Tiempo</p>
             </div>
             <div>
-              <p className="text-3xl font-black text-emerald-400 leading-none">3s</p>
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Registro de Préstamo</p>
+              <p className="text-3xl sm:text-4xl font-black text-emerald-400 leading-none">3s</p>
+              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Préstamo Express</p>
             </div>
           </div>
         </div>
 
-        {/* HERO MOCKUP (INTERACTION PREVIEW IN CSS) */}
-        <div className="lg:col-span-5 relative mt-6 lg:mt-0">
-          <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-transparent blur-2xl rounded-full"></div>
+        {/* HERO COMPOSITE GRAPHIC (GENERIC CYBER VIOLIN + FLOATING GLASS WIDGETS) */}
+        <div className="lg:col-span-5 relative mt-6 lg:mt-0 flex justify-center">
+          <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-transparent blur-3xl rounded-full"></div>
           
-          {/* CSS Drawn Luxury Dashboard Mockup */}
-          <div className="bg-[#0b0f24]/85 border border-white/10 rounded-[3rem] p-6 shadow-2xl relative overflow-hidden backdrop-blur-md animate-float">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 to-emerald-400"></div>
+          {/* Framed Cyber Violin Asset */}
+          <div className="relative group max-w-md w-full">
             
-            {/* Header simulated */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/5">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-              </div>
-              <div className="bg-slate-950 px-3 py-1 rounded-full border border-white/5">
-                <p className="text-[8px] font-mono text-slate-500 tracking-wider">SECURE: SYSTEM_OK</p>
-              </div>
-            </div>
+            {/* Ambient Backlight Glow */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/30 via-transparent to-emerald-500/20 blur-3xl opacity-60 group-hover:opacity-85 transition-opacity duration-1000"></div>
 
-            {/* Dashboard Title */}
-            <div className="py-4 text-left">
-              <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">RESUMEN EJECUTIVO</p>
-              <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">COLEGIO PRINCIPAL</h3>
-            </div>
-
-            {/* Simulated Widgets */}
-            <div className="grid grid-cols-2 gap-3 pb-4">
-              <div className="bg-[#020617] border border-white/5 rounded-2xl p-3 text-left">
-                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">EN HOGAR</p>
-                <p className="text-2xl font-black text-indigo-400 mt-1">42 Activos</p>
-                <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden mt-2">
-                  <div className="w-[70%] bg-indigo-500 h-full rounded-full"></div>
-                </div>
-              </div>
-              <div className="bg-[#020617] border border-white/5 rounded-2xl p-3 text-left">
-                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">EN TALLER</p>
-                <p className="text-2xl font-black text-rose-500 mt-1">3 Reparar</p>
-                <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden mt-2">
-                  <div className="w-[15%] bg-rose-500 h-full rounded-full"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Mini movement list preview */}
-            <div className="space-y-2 text-left">
-              <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">HISTORIAL EN TIEMPO REAL</p>
+            {/* Master Image Frame */}
+            <div className="bg-[#0b0f24]/50 border border-white/10 rounded-[3rem] p-3 shadow-2xl relative overflow-hidden backdrop-blur-md transition-all duration-1000 group-hover:scale-[1.01] hover:border-indigo-500/20">
+              <img 
+                src={heroViolinUrl} 
+                alt="Cyber Violin Tech Showcase" 
+                className="w-full aspect-square object-cover rounded-[2.5rem] opacity-95 group-hover:opacity-100 transition-opacity" 
+              />
               
-              <div className="bg-[#020617]/50 border border-white/5 rounded-xl p-2.5 flex items-center justify-between text-[9px] hover:border-indigo-500/30 transition-all">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <div>
-                    <p className="text-white font-bold uppercase leading-none">🎻 VIOLÍN STRAD-12</p>
-                    <p className="text-[7px] text-slate-500 uppercase mt-0.5">DEVUELTO POR MAURICIO A.</p>
-                  </div>
-                </div>
-                <span className="text-[7px] font-black bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full">SALA</span>
-              </div>
+              {/* Overlay Glass Highlight */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.01] via-transparent to-white/[0.05] pointer-events-none rounded-[2.5rem]"></div>
+            </div>
 
-              <div className="bg-[#020617]/50 border border-white/5 rounded-xl p-2.5 flex items-center justify-between text-[9px] hover:border-indigo-500/30 transition-all">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                  <div>
-                    <p className="text-white font-bold uppercase leading-none">🎷 SAXO ALTO YAM-4</p>
-                    <p className="text-[7px] text-slate-500 uppercase mt-0.5">RETIRADO POR SOFÍA DIAZ</p>
-                  </div>
-                </div>
-                <span className="text-[7px] font-black bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full">HOGAR</span>
+            {/* FLOATING ADMIN WIDGET (CHECKOUT ACTIVE) */}
+            <div className="absolute -top-6 -left-6 bg-slate-950/80 border border-white/10 rounded-2xl p-4 shadow-3xl flex items-center gap-3 backdrop-blur-xl animate-float max-w-[190px] text-left">
+              <div className="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 border border-emerald-500/20 shrink-0">
+                <Check className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">SALA DE MÚSICA</p>
+                <p className="text-[11px] font-black text-white uppercase italic leading-tight">Violines Listos</p>
+                <p className="text-[8px] text-emerald-400 font-bold mt-0.5">✓ 100% Sincronizados</p>
               </div>
             </div>
-          </div>
 
-          {/* Floating badge */}
-          <div className="absolute -bottom-6 -right-6 bg-slate-950 border-2 border-white/10 rounded-2xl p-4 shadow-2xl flex items-center gap-3 backdrop-blur-xl animate-bounce">
-            <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 border border-indigo-500/20">
-              <QrCode className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">TECNOLOGÍA</p>
-              <p className="text-[11px] font-black text-white uppercase italic tracking-tighter">Escáner QR Integrado</p>
+            {/* FLOATING STATUS WIDGET (PRÉSTAMOS HOGAR) */}
+            <div className="absolute -bottom-6 -right-6 bg-slate-950/80 border border-white/10 rounded-2xl p-4 shadow-3xl flex items-center gap-3 backdrop-blur-xl animate-float duration-8000 max-w-[190px] text-left">
+              <div className="w-9 h-9 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 border border-indigo-500/20 shrink-0">
+                <Music className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">PRÉSTAMOS ACTIVOS</p>
+                <p className="text-[11px] font-black text-white uppercase italic leading-tight">42 en Hogar</p>
+                <p className="text-[8px] text-indigo-400 font-bold mt-0.5">🛡️ Rastro QR Seguro</p>
+              </div>
             </div>
           </div>
         </div>
@@ -223,7 +190,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {/* CARD 1 */}
-            <div className="bg-[#0b0f24]/30 border border-white/5 rounded-[2.5rem] p-10 hover:bg-[#0b0f24]/60 hover:border-indigo-500/20 transition-all hover:-translate-y-2 group shadow-xl relative overflow-hidden text-left">
+            <div className="bg-[#0b0f24]/30 border border-white/5 rounded-[2.5rem] p-10 hover:bg-[#0b0f24]/60 hover:border-indigo-500/20 transition-all duration-500 hover:-translate-y-3 group shadow-xl relative overflow-hidden text-left">
               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 blur-3xl rounded-full"></div>
               <div className="w-16 h-16 bg-indigo-500/10 border border-indigo-500/20 rounded-[1.5rem] flex items-center justify-center text-indigo-400 mb-8 group-hover:scale-110 transition-transform">
                 <Shield className="w-8 h-8" />
@@ -235,7 +202,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
             </div>
 
             {/* CARD 2 */}
-            <div className="bg-[#0b0f24]/30 border border-white/5 rounded-[2.5rem] p-10 hover:bg-[#0b0f24]/60 hover:border-emerald-500/20 transition-all hover:-translate-y-2 group shadow-xl relative overflow-hidden text-left">
+            <div className="bg-[#0b0f24]/30 border border-white/5 rounded-[2.5rem] p-10 hover:bg-[#0b0f24]/60 hover:border-emerald-500/20 transition-all duration-500 hover:-translate-y-3 group shadow-xl relative overflow-hidden text-left">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-600/5 blur-3xl rounded-full"></div>
               <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-[1.5rem] flex items-center justify-center text-emerald-400 mb-8 group-hover:scale-110 transition-transform">
                 <Clock className="w-8 h-8" />
@@ -247,7 +214,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
             </div>
 
             {/* CARD 3 */}
-            <div className="bg-[#0b0f24]/30 border border-white/5 rounded-[2.5rem] p-10 hover:bg-[#0b0f24]/60 hover:border-rose-500/20 transition-all hover:-translate-y-2 group shadow-xl relative overflow-hidden text-left">
+            <div className="bg-[#0b0f24]/30 border border-white/5 rounded-[2.5rem] p-10 hover:bg-[#0b0f24]/60 hover:border-rose-500/20 transition-all duration-500 hover:-translate-y-3 group shadow-xl relative overflow-hidden text-left">
               <div className="absolute top-0 right-0 w-32 h-32 bg-rose-600/5 blur-3xl rounded-full"></div>
               <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-[1.5rem] flex items-center justify-center text-rose-400 mb-8 group-hover:scale-110 transition-transform">
                 <Users className="w-8 h-8" />
@@ -261,7 +228,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
         </div>
       </section>
 
-      {/* MODULE SHOWCASE (INTERACTIVE TABS) */}
+      {/* MODULE SHOWCASE (INTERACTIVE TABS WITH REAL IMAGE INJECTIONS) */}
       <section id="modulos" className="py-24 border-t border-white/5 relative">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           
@@ -372,26 +339,27 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
                     <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-500" /> Reportes PDF con áreas para la firma del Director</li>
                   </ul>
                 </div>
-                <div className="lg:col-span-5 bg-slate-950/70 border border-white/5 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center space-y-6 relative">
+                <div className="lg:col-span-5 relative flex justify-center">
                   
-                  {/* QR scanner visual simulation */}
-                  <div className="w-full aspect-square max-w-[200px] border-2 border-indigo-500/30 rounded-3xl relative overflow-hidden flex items-center justify-center bg-black/50 p-6">
-                    <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-indigo-500"></div>
-                    <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-indigo-500"></div>
-                    <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-indigo-500"></div>
-                    <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-indigo-500"></div>
+                  {/* Real Dynamic Scanning Showcase Graphic */}
+                  <div className="bg-[#0b0f24]/70 border border-white/10 rounded-3xl p-2.5 shadow-2xl relative overflow-hidden backdrop-blur-xl group/qrmock">
+                    <img 
+                      src={mobileScanUrl} 
+                      alt="Smartphone QR scanning in action" 
+                      className="w-full max-h-[320px] object-cover rounded-2xl shadow-inner group-hover/qrmock:scale-[1.02] transition-transform duration-500" 
+                    />
                     
-                    {/* Glowing QR grid */}
-                    <div className="w-28 h-28 opacity-45 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:8px_8px] border border-white/10 rounded-lg"></div>
-                    
-                    {/* Scanner line animate */}
-                    <div className="absolute left-0 right-0 h-0.5 bg-indigo-500 shadow-[0_0_15px_#6366f1] top-1/2 -translate-y-1/2 animate-pulse"></div>
+                    {/* Glowing scanning target overlay */}
+                    <div className="absolute top-1/2 left-[38%] -translate-y-1/2 -translate-x-1/2 w-28 h-28 border border-emerald-500/40 rounded-xl bg-emerald-500/5 flex items-center justify-center animate-pulse pointer-events-none">
+                      <div className="w-20 h-20 border-2 border-emerald-500/70 border-dashed rounded-lg"></div>
+                    </div>
                   </div>
 
-                  <div className="bg-[#020617] border border-indigo-500/10 rounded-2xl py-3 px-6 text-center w-full flex items-center justify-center gap-3">
-                    <Volume2 className="w-5 h-5 text-indigo-400 animate-bounce" />
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest">
-                      AUDIO-BEEP VALIDACIÓN ACTIVO
+                  {/* floating beep validation alert */}
+                  <div className="absolute -bottom-4 bg-slate-950 border border-indigo-500/20 rounded-2xl py-3 px-6 text-center shadow-2xl flex items-center gap-3 max-w-sm">
+                    <Volume2 className="w-5 h-5 text-emerald-400 animate-bounce" />
+                    <p className="text-[9px] font-black text-white uppercase tracking-widest">
+                      AUDIO-BEEP EXITOSO: 880Hz / 1320Hz
                     </p>
                   </div>
                 </div>
@@ -465,34 +433,22 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
                     <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-500" /> Exportaciones Excel limpias de toda la base de datos</li>
                   </ul>
                 </div>
-                <div className="lg:col-span-5 bg-slate-950/70 border border-white/5 rounded-3xl p-6 sm:p-8 space-y-5">
-                  <div className="bg-[#020617] border border-white/5 rounded-2xl p-4 text-xs text-left space-y-4">
-                    <div className="flex items-center gap-3 text-indigo-400">
-                      <FileText className="w-5 h-5" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">auditoria_anual_2026.pdf</p>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase">
-                        <span>Éxito de Retorno</span>
-                        <span className="text-emerald-500">100% Completo</span>
-                      </div>
-                      <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                        <div className="w-full bg-emerald-500 h-full rounded-full"></div>
-                      </div>
-                    </div>
-                    <div className="border-t border-white/5 pt-3 flex gap-3 text-[8px] font-bold uppercase tracking-widest text-slate-500">
-                      <div>
-                        <span>Firmado por Encargado</span>
-                        <div className="w-16 h-4 border-b border-indigo-500/30 font-mono text-[7px] text-slate-600 mt-1">SIGNED_OK</div>
-                      </div>
-                      <div>
-                        <span>Firmado por Director</span>
-                        <div className="w-16 h-4 border-b border-indigo-500/30 font-mono text-[7px] text-slate-600 mt-1">SIGNED_OK</div>
-                      </div>
-                    </div>
+                <div className="lg:col-span-5 relative flex justify-center">
+                  
+                  {/* Real High-End Dashboard Preview Image */}
+                  <div className="bg-[#0b0f24]/50 border border-white/10 rounded-3xl p-2.5 shadow-2xl relative overflow-hidden backdrop-blur-xl group/dashmock max-w-sm">
+                    <img 
+                      src={dashboardPreviewUrl} 
+                      alt="Real Dashboard preview loaded dynamically" 
+                      className="w-full max-h-[320px] object-cover rounded-2xl shadow-2xl group-hover/dashmock:scale-[1.02] transition-transform duration-500" 
+                    />
+                    
+                    {/* Glass glare effect overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.01] via-transparent to-white/[0.06] pointer-events-none rounded-2xl"></div>
                   </div>
-                  <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-                    <FileDown className="w-4 h-4" /> Exportar Informe de Auditoría PDF
+
+                  <button className="absolute -bottom-4 bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 px-6 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all shadow-xl shadow-indigo-600/35 flex items-center justify-center gap-2">
+                    <FileDown className="w-4 h-4 animate-bounce" /> Descargar Auditoría PDF Firmada
                   </button>
                 </div>
               </div>
@@ -504,51 +460,33 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
 
       {/* MOBILE QR VALIDATION SECTION */}
       <section id="movilidad" className="py-24 border-t border-white/5 bg-[#020617]/40 relative">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-20 items-center">
           <div className="lg:col-span-5 relative flex justify-center">
-            {/* Elegant glassmorphic phone frame simulated in CSS */}
-            <div className="w-full max-w-[280px] bg-slate-950 border-[6px] border-slate-900 rounded-[3rem] p-4 shadow-3xl relative overflow-hidden aspect-[9/18]">
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-4 bg-slate-900 rounded-full flex items-center justify-center">
-                <span className="w-1.5 h-1.5 rounded-full bg-camera bg-slate-800"></span>
-              </div>
+            
+            {/* Real Scanning Image inside a Premium Bezel Frame */}
+            <div className="bg-[#0b0f24]/60 border border-white/10 rounded-[3rem] p-3 shadow-3xl relative overflow-hidden max-w-xs group/mobilepanel">
               
-              {/* Phone screen content */}
-              <div className="bg-[#020617] h-full rounded-[2.5rem] p-4 flex flex-col justify-between text-left relative overflow-hidden">
-                <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-indigo-600/10 blur-2xl rounded-full"></div>
-                
-                {/* Simulated App Header */}
-                <div className="flex items-center justify-between border-b border-white/5 pb-2 pt-2">
-                  <span className="text-[8px] font-black text-indigo-400">INVENTOS SCANNER</span>
-                  <span className="text-[6px] font-mono text-slate-500">v2.0.F</span>
-                </div>
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-4 bg-slate-950 rounded-full z-20 flex items-center justify-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-800"></span>
+              </div>
 
-                {/* Scan success popup inside phone */}
-                <div className="bg-slate-900/90 border border-emerald-500/30 rounded-2xl p-4 text-center space-y-3 z-10 my-auto shadow-2xl animate-in zoom-in-95">
-                  <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-400">
-                    <Check className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h5 className="text-[10px] font-black text-white uppercase tracking-wider">RETORNO REGISTRADO</h5>
-                    <p className="text-[7.5px] text-slate-400 font-bold uppercase mt-1 leading-tight">
-                      🎻 VIOLÍN WT-04 <br /> Devuelto con éxito por Camila Matte
-                    </p>
-                  </div>
-                  <span className="text-[6.5px] font-black bg-emerald-500/15 text-emerald-500 px-3 py-1 rounded-full uppercase tracking-widest inline-block">
-                    📍 SALA DE MÚSICA
-                  </span>
-                </div>
-
-                {/* Simulating scanning button */}
-                <div className="bg-slate-950/70 border border-white/5 rounded-xl py-2 px-3 text-center flex items-center justify-center gap-2">
-                  <Volume2 className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">PLAYING: SCAN_BEEP</span>
-                </div>
+              <img 
+                src={mobileScanUrl} 
+                alt="Smartphone QR scanning classical instrument" 
+                className="w-full aspect-[9/14] object-cover rounded-[2.5rem] opacity-90 group-hover/mobilepanel:opacity-100 transition-opacity" 
+              />
+              
+              {/* Internal simulated glass overlays */}
+              <div className="absolute bottom-6 left-6 right-6 bg-slate-950/80 border border-white/10 p-4 rounded-2xl text-left backdrop-blur-md">
+                <p className="text-[7px] font-black text-indigo-400 tracking-widest">SISTEMA PWA MOVIL</p>
+                <p className="text-[10px] font-black text-white mt-0.5">Escáner Escolar Listo</p>
+                <p className="text-[8px] text-emerald-400 font-bold mt-0.5">✓ 0% Latencia de Red</p>
               </div>
             </div>
 
             {/* floating audio details badge */}
             <div className="absolute top-12 -left-6 bg-slate-950 border border-white/10 rounded-2xl p-3 shadow-2xl backdrop-blur-xl max-w-[160px] text-left">
-              <p className="text-[7px] font-black text-indigo-400 uppercase tracking-widest">AUDIO RETALIMENTACIÓN</p>
+              <p className="text-[7px] font-black text-indigo-400 tracking-widest">AUDIO RETROALIMENTACIÓN</p>
               <p className="text-[9px] font-black text-white uppercase mt-1">Web Audio API Beep</p>
               <p className="text-[8px] text-slate-500 font-medium leading-tight mt-1">Pitidos de éxito y buzz graves de error en tiempo real.</p>
             </div>
@@ -620,7 +558,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onLoginClick }) => {
                 </div>
                 <button 
                   onClick={() => setSubmitted(false)}
-                  className="bg-slate-900 border border-white/5 text-slate-400 hover:text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+                  className="bg-slate-900 border border-white/5 text-slate-400 hover:text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all inline-block mx-auto w-full text-center"
                 >
                   Enviar otra Solicitud
                 </button>

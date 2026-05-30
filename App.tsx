@@ -142,7 +142,11 @@ const App: React.FC = () => {
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    localStorage.theme = newTheme;
+    try {
+      localStorage.theme = newTheme;
+    } catch (e) {
+      console.warn("No se pudo guardar la preferencia de tema en localStorage:", e);
+    }
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
