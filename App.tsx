@@ -25,6 +25,7 @@ import InstrumentDetail from './components/InstrumentDetail.tsx';
 import OverdueAlerts from './components/OverdueAlerts.tsx';
 import QRScannerView from './components/QRScannerView.tsx';
 import { LoginView } from './components/LoginView.tsx';
+import PresentationControlView from './components/PresentationControlView.tsx';
 
 // Hooks
 import { useInventoryData } from './hooks/useInventoryData.ts';
@@ -32,7 +33,7 @@ import { useDebounce } from './hooks/useDebounce.ts';
 
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 
-type ViewMode = 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'qr-scanner' | 'regular-detail' | 'bueno-detail';
+type ViewMode = 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'qr-scanner' | 'regular-detail' | 'bueno-detail' | 'presentation-control';
 
 const App: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -378,6 +379,7 @@ const App: React.FC = () => {
               {viewMode === 'reports' && <ReportsView history={history} onClearHistory={() => setShowHistoryDeleteConfirm(true)} />}
               {viewMode === 'qr-access' && <QRAccessView />}
               {viewMode === 'qr-scanner' && <QRScannerView inventory={data} onViewInstrument={(item) => setSelectedInstrument(item)} />}
+              {viewMode === 'presentation-control' && <PresentationControlView inventory={data} onViewInstrument={(item) => setSelectedInstrument(item)} />}
               {(['list', 'monitor-detail', 'loaned-detail', 'repair-detail', 'regular-detail', 'bueno-detail'].includes(viewMode)) && (
                 <div className="bg-slate-900/20 border border-slate-900 rounded-[3rem] overflow-hidden shadow-2xl">
                   <div className="p-10 border-b border-slate-900 flex items-center gap-6">
