@@ -368,6 +368,13 @@ const DirectoryView: React.FC = () => {
                                     <p className="text-[9px] md:text-[11px] font-black text-white/40 uppercase tracking-[0.4em] mb-3 md:mb-4 group-hover/field:text-indigo-400 transition-colors">Correo Electrónico</p>
                                     <p className="text-xs md:text-sm font-bold text-white/90 lowercase truncate tracking-wider">{selectedStudent.email || 'UNREGISTERED'}</p>
                                 </div>
+                                <div className="group/field">
+                                    <p className="text-[9px] md:text-[11px] font-black text-white/40 uppercase tracking-[0.4em] mb-3 md:mb-4 group-hover/field:text-indigo-400 transition-colors">Teléfono / WhatsApp Estudiante</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.5)]"></div>
+                                        <p className="text-xl md:text-3xl font-black text-emerald-400 tracking-tighter">{selectedStudent.phone || 'SIN REGISTRO'}</p>
+                                    </div>
+                                </div>
                             </div>
                         </section>
 
