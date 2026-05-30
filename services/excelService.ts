@@ -1,5 +1,5 @@
 import { InventoryItem, Student } from '../types.ts';
-import { globalNormalize } from '../utils.ts';
+import { globalNormalize, findOfficialStudentName } from '../utils.ts';
 import { inventoryItemSchema } from '../schemas/inventory.schema.ts';
 import { studentSchema } from '../schemas/student.schema.ts';
 
@@ -74,6 +74,8 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             validStudents.push(student);
           }
         });
+        
+        const officialStudentNames = validStudents.map(s => s.name);
         
         const mappedData: Record<string, unknown>[] = rawData.map((row, index) => {
           const mappedItem: Record<string, string> = { id: String(index + 1) };
@@ -156,6 +158,17 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
 
           // Unify mappedItem structure with metadata
           const resultRow: Record<string, unknown> = { ...mappedItem };
+          
+          if (officialStudentNames.length > 0 && resultRow.Estudiante) {
+            const matchedName = findOfficialStudentName(String(resultRow.Estudiante), officialStudentNames);
+            resultRow.Estudiante = matchedName;
+            
+            const officialStudent = validStudents.find(s => s.name === matchedName);
+            if (officialStudent && officialStudent.course) {
+              resultRow.Curso = officialStudent.course;
+            }
+          }
+
           resultRow.metadata = metadata;
           return resultRow;
         }).filter(item => {

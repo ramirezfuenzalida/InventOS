@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient.ts';
 import { InventoryItem, MovementRecord, Student } from '../types.ts';
-import { globalNormalize } from '../utils.ts';
+import { globalNormalize, cleanNameForMatching, areWordsSimilar } from '../utils.ts';
 
 export const fetchInitialData = async () => {
   const [invRes, histRes, studRes] = await Promise.all([
@@ -86,6 +86,86 @@ export const syncExcelData = async (
     onProgress("Actualizando directorio en el servidor...");
     const { error: studError } = await supabase.from('students').upsert(uploadStudents, { onConflict: 'name' });
     if (studError) console.warn("Error upserting students:", studError);
+  }
+
+  // 3. Limpieza automática de registros de estudiantes duplicados preexistentes en la base de datos
+  try {
+    const { data: allDbStudents, error: fetchErr } = await supabase
+      .from('students')
+      .select('id, name, course, phone, email, parent_name, parent_phone');
+      
+    if (!fetchErr && allDbStudents) {
+      // Agrupar estudiantes por similitud de nombre
+      const studentGroups = new Map<string, typeof allDbStudents>();
+      
+      allDbStudents.forEach(student => {
+        const cleaned = cleanNameForMatching(student.name);
+        if (!cleaned) return;
+        
+        let foundGroupKey: string | null = null;
+        for (const key of studentGroups.keys()) {
+          const keyWords = key.split(" ");
+          const studentWords = cleaned.split(" ");
+          
+          if (keyWords.length >= 2 && studentWords.length >= 2) {
+            if (areWordsSimilar(keyWords[0], studentWords[0]) && areWordsSimilar(keyWords[1], studentWords[1])) {
+              foundGroupKey = key;
+              break;
+            }
+          } else if (keyWords.length === 1 && studentWords.length === 1) {
+            if (areWordsSimilar(keyWords[0], studentWords[0])) {
+              foundGroupKey = key;
+              break;
+            }
+          }
+        }
+        
+        if (foundGroupKey) {
+          studentGroups.get(foundGroupKey)!.push(student);
+        } else {
+          studentGroups.set(cleaned, [student]);
+        }
+      });
+      
+      // Para grupos que tengan más de un registro, conservar solo el más completo/oficial
+      const idsToDelete: string[] = [];
+      for (const [_, group] of studentGroups.entries()) {
+        if (group.length > 1) {
+          let bestIndex = 0;
+          let maxScore = -1;
+          
+          group.forEach((s, idx) => {
+            let score = 0;
+            // Incrementar puntuación según los datos de contacto que tenga rellenados
+            if (s.phone && s.phone.trim() !== '') score += 2;
+            if (s.email && s.email.trim() !== '') score += 2;
+            if (s.parent_name && s.parent_name.trim() !== '') score += 1;
+            if (s.parent_phone && s.parent_phone.trim() !== '') score += 1;
+            // Un pequeño beneficio adicional para nombres más largos (generalmente el nombre oficial completo)
+            score += s.name.length * 0.01;
+            
+            if (score > maxScore) {
+              maxScore = score;
+              bestIndex = idx;
+            }
+          });
+          
+          group.forEach((s, idx) => {
+            if (idx !== bestIndex) {
+              idsToDelete.push(s.id);
+            }
+          });
+        }
+      }
+      
+      if (idsToDelete.length > 0) {
+        onProgress(`Limpiando ${idsToDelete.length} registros de estudiantes duplicados...`);
+        const { error: deleteErr } = await supabase.from('students').delete().in('id', idsToDelete);
+        if (deleteErr) console.warn("Error al eliminar estudiantes duplicados:", deleteErr);
+      }
+    }
+  } catch (cleanErr) {
+    console.warn("Error en la rutina de limpieza de estudiantes duplicados:", cleanErr);
   }
 
   // Sincronizar estados activos desde el Historial
