@@ -26,6 +26,7 @@ import OverdueAlerts from './components/OverdueAlerts.tsx';
 import QRScannerView from './components/QRScannerView.tsx';
 import { LoginView } from './components/LoginView.tsx';
 import PresentationControlView from './components/PresentationControlView.tsx';
+import { LandingView } from './components/LandingView.tsx';
 
 // Hooks
 import { useInventoryData } from './hooks/useInventoryData.ts';
@@ -33,7 +34,7 @@ import { useDebounce } from './hooks/useDebounce.ts';
 
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 
-type ViewMode = 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'qr-scanner' | 'regular-detail' | 'bueno-detail' | 'presentation-control';
+type ViewMode = 'landing' | 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'qr-scanner' | 'regular-detail' | 'bueno-detail' | 'presentation-control';
 
 const App: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -56,7 +57,10 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
-  const [viewMode, setViewMode] = useState<ViewMode>(isStudentModeUrl ? 'student-check' : 'dashboard');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (isStudentModeUrl) return 'student-check';
+    return 'landing';
+  });
   const [selectedMonitor, setSelectedMonitor] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -74,15 +78,21 @@ const App: React.FC = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsAuthLoading(false);
+      if (session && viewMode === 'landing') {
+        setViewMode('dashboard');
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setIsAuthLoading(false);
+      if (session && viewMode === 'landing') {
+        setViewMode('dashboard');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [viewMode]);
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
@@ -104,12 +114,12 @@ const App: React.FC = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setViewMode('dashboard');
+    setViewMode('landing');
   };
 
   // Determinar si la vista actual requiere login
   const isProtectedView = useMemo(() => {
-    const publicViews: ViewMode[] = ['student-check', 'qr-scanner', 'qr-access'];
+    const publicViews: ViewMode[] = ['landing', 'student-check', 'qr-scanner', 'qr-access'];
     return !publicViews.includes(viewMode);
   }, [viewMode]);
 
@@ -206,6 +216,12 @@ const App: React.FC = () => {
     );
   }
 
+  if (viewMode === 'landing' && !isStudentModeUrl) {
+    return (
+      <LandingView onLoginClick={() => setViewMode('dashboard')} />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 flex w-full max-w-full overflow-x-hidden relative">
       {isProcessing && (
@@ -274,7 +290,7 @@ const App: React.FC = () => {
       {needsAuth && (
         <LoginView 
           onSuccess={() => setShowLoginPrompt(false)} 
-          onClose={() => setViewMode('student-check')}
+          onClose={() => setViewMode('landing')}
         />
       )}
 
