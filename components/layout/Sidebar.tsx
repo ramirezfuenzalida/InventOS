@@ -18,7 +18,7 @@ import {
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 const APP_NAME = "OSWT";
 const APP_SUBTITLE = "Orquesta Sinfónica William Taylor";
-const APP_VERSION = "1.2.02 ExeApp";
+const APP_VERSION = "1.2.03 ExeApp";
 
 interface SidebarProps {
   isMobileMenuOpen: boolean;

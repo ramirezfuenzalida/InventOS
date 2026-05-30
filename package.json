@@ -1,7 +1,7 @@
 {
   "name": "exe-app",
   "private": true,
-  "version": "1.2.02",
+  "version": "1.2.03",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite --port 3000\" \"json-server db.json --port 3004 --host 0.0.0.0\"",
