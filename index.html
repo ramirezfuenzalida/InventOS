@@ -94,6 +94,16 @@
       }
     }
 
+    /* Soporte de Notch y áreas seguras (safe-area) para dispositivos móviles */
+    @media (max-width: 1023px) {
+      header {
+        padding-top: calc(1rem + env(safe-area-inset-top, 0px)) !important;
+      }
+      aside {
+        padding-top: env(safe-area-inset-top, 0px) !important;
+      }
+    }
+
     html {
       overflow-x: hidden;
       max-width: 100%;
