@@ -10,13 +10,15 @@ export const fetchInitialData = async () => {
   ]);
   
   if (invRes.error) throw invRes.error;
-  if (histRes.error) throw histRes.error;
-  if (studRes.error) throw studRes.error;
+
+  // Si hay error de permisos (esperable en modo anónimo), devolvemos listas vacías sin lanzar excepción
+  const history = histRes.error ? [] : (histRes.data as MovementRecord[]) || [];
+  const students = studRes.error ? [] : (studRes.data as Student[]) || [];
 
   return {
     inventory: (invRes.data as InventoryItem[]) || [],
-    history: (histRes.data as MovementRecord[]) || [],
-    students: (studRes.data as Student[]) || []
+    history,
+    students
   };
 };
 
