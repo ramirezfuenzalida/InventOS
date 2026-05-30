@@ -41,16 +41,39 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
           const studentWs = wb.Sheets[studentSheetName];
           const rawStudents = XLSX.utils.sheet_to_json<Record<string, unknown>>(studentWs);
           parsedStudents = rawStudents.map((row) => {
-            const name = String(row.nombre_completo || row.nombre || row.name || row.estudiante || '').replace(/_/g, ' ').toUpperCase().trim();
-            const course = String(row.curso || row.grade || row.course || 'SIN CURSO').toUpperCase().trim();
-            const instrument = row.instrumento || row.instrument || null;
-            const phone = row.telefono_estudiante || row.telefono || row.phone || null;
-            const email = row.email_estudiante || row.email || row.correo || null;
-            const parentName = row.nombre_apoderado || row.apoderado || row.parent || null;
-            const parentPhone = row.telefono_apoderado || row.phone_apoderado || null;
+            const mapped: Record<string, string | null> = {};
+            const standardFields: Record<string, string[]> = {
+              rut: ['rut', 'id', 'identificacion', 'cedula', 'run'],
+              name: ['nombre_completo', 'nombre completo', 'nombre', 'name', 'estudiante', 'alumno'],
+              course: ['curso', 'grade', 'course', 'ano', 'año', 'seccion'],
+              instrument: ['instrumento', 'instrument', 'item'],
+              phone: ['telefono_estudiante', 'telefono estudiante', 'telefono', 'teléfono', 'phone', 'celular', 'contacto'],
+              email: ['email_estudiante', 'email estudiante', 'email', 'correo', 'mail', 'correo estudiante', 'correo_estudiante'],
+              parent_name: ['nombre_apoderado', 'nombre apoderado', 'apoderado', 'parent', 'tutor'],
+              parent_phone: ['telefono_apoderado', 'telefono apoderado', 'contacto apoderado', 'celular apoderado', 'phone_apoderado', 'phone apoderado']
+            };
+
+            const rowKeys = Object.keys(row);
+            rowKeys.forEach(key => {
+              const normKey = globalNormalize(key).replace(/\s+/g, '');
+              for (const [field, patterns] of Object.entries(standardFields)) {
+                if (patterns.some(p => globalNormalize(p).replace(/\s+/g, '') === normKey)) {
+                  mapped[field] = String(row[key]);
+                  break;
+                }
+              }
+            });
+
+            const name = String(mapped.name || '').replace(/_/g, ' ').toUpperCase().trim();
+            const course = String(mapped.course || 'SIN CURSO').toUpperCase().trim();
+            const instrument = mapped.instrument || null;
+            const phone = mapped.phone || null;
+            const email = mapped.email || null;
+            const parentName = mapped.parent_name ? String(mapped.parent_name).toUpperCase().trim() : null;
+            const parentPhone = mapped.parent_phone || null;
 
             return {
-              id: String(row.rut || row.id || '').trim(),
+              id: String(mapped.rut || '').trim(),
               name,
               course,
               instrument: instrument ? String(instrument).trim() : null,
