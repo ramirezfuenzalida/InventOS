@@ -60,10 +60,10 @@ export const useInventoryData = () => {
     };
   }, [invalidateData]);
 
-  const excelMutation = useMutation<void, Error, InventoryItem[]>({
-    mutationFn: async (mappedData) => {
+  const excelMutation = useMutation<void, Error, { mappedData: InventoryItem[]; students?: Student[] }>({
+    mutationFn: async ({ mappedData, students }) => {
       isDeletingRef.current = true;
-      await syncExcelData(mappedData, setProcessingMessage);
+      await syncExcelData(mappedData, setProcessingMessage, students);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventoryData'] });
@@ -93,10 +93,11 @@ export const useInventoryData = () => {
       
       queryClient.setQueryData<CacheData | undefined>(['inventoryData'], (old) => {
         if (!old) return old;
-        return { ...old, inventory: mappedData };
+        const mergedStudents = result.students || old.students;
+        return { ...old, inventory: mappedData, students: mergedStudents };
       });
       onSuccess();
-      excelMutation.mutate(mappedData);
+      excelMutation.mutate({ mappedData, students: result.students });
     } catch (error: unknown) {
       setIsProcessing(false);
       if (error instanceof Error) {

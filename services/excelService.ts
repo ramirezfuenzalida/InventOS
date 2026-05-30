@@ -1,10 +1,12 @@
-import { InventoryItem } from '../types.ts';
+import { InventoryItem, Student } from '../types.ts';
 import { globalNormalize } from '../utils.ts';
 import { inventoryItemSchema } from '../schemas/inventory.schema.ts';
+import { studentSchema } from '../schemas/student.schema.ts';
 
 export interface ExcelParseResult {
   success: boolean;
   data?: InventoryItem[];
+  students?: Student[];
   errors?: string[];
 }
 
@@ -23,8 +25,55 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
         const XLSX = await import('xlsx');
         
         const wb = XLSX.read(bstr, { type: 'binary' });
+        
+        // Find inventory sheet (first sheet)
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
+
+        // Find students sheet (if any)
+        const studentSheetName = wb.SheetNames.find(name => {
+          const n = globalNormalize(name).replace(/\s+/g, '');
+          return n === 'listadodeestudiante' || n === 'listadodeestudiantes' || n === 'estudiantes' || n === 'alumnos';
+        });
+
+        let parsedStudents: Student[] = [];
+        if (studentSheetName) {
+          const studentWs = wb.Sheets[studentSheetName];
+          const rawStudents = XLSX.utils.sheet_to_json<Record<string, unknown>>(studentWs);
+          parsedStudents = rawStudents.map((row) => {
+            const name = String(row.nombre_completo || row.nombre || row.name || row.estudiante || '').replace(/_/g, ' ').toUpperCase().trim();
+            const course = String(row.curso || row.grade || row.course || 'SIN CURSO').toUpperCase().trim();
+            const instrument = row.instrumento || row.instrument || null;
+            const phone = row.telefono_estudiante || row.telefono || row.phone || null;
+            const email = row.email_estudiante || row.email || row.correo || null;
+            const parentName = row.nombre_apoderado || row.apoderado || row.parent || null;
+            const parentPhone = row.telefono_apoderado || row.phone_apoderado || null;
+
+            return {
+              id: String(row.rut || row.id || '').trim(),
+              name,
+              course,
+              instrument: instrument ? String(instrument).trim() : null,
+              phone: phone ? String(phone).trim() : null,
+              email: email ? String(email).trim() : null,
+              parent_name: parentName ? String(parentName).trim() : null,
+              parent_phone: parentPhone ? String(parentPhone).trim() : null
+            } as Student;
+          }).filter(s => s.name !== '');
+        }
+
+        const validStudents: Student[] = [];
+        parsedStudents.forEach((student, index) => {
+          if (!student.id || student.id.trim() === '') {
+            student.id = `temp-id-${index + 1}`;
+          }
+          const parseResult = studentSchema.safeParse(student);
+          if (parseResult.success) {
+            validStudents.push(parseResult.data);
+          } else {
+            validStudents.push(student);
+          }
+        });
         
         const mappedData: Record<string, unknown>[] = rawData.map((row, index) => {
           const mappedItem: Record<string, string> = { id: String(index + 1) };
@@ -136,7 +185,11 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
         if (errorLogs.length > 0) {
           resolve({ success: false, errors: errorLogs });
         } else {
-          resolve({ success: true, data: validRows });
+          resolve({ 
+            success: true, 
+            data: validRows,
+            students: validStudents.length > 0 ? validStudents : undefined
+          });
         }
       } catch (error: unknown) {
         if (error instanceof Error) {

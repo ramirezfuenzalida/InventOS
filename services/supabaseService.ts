@@ -24,7 +24,8 @@ export const fetchInitialData = async () => {
 
 export const syncExcelData = async (
   mappedData: InventoryItem[], 
-  onProgress: (msg: string) => void
+  onProgress: (msg: string) => void,
+  studentsData?: Student[]
 ) => {
   onProgress("Preparando datos para la base de datos...");
   const dbItems = mappedData.map((item, idx) => {
@@ -39,24 +40,50 @@ export const syncExcelData = async (
   if (syncError) throw syncError;
 
   // Actualizar base de estudiantes
-  const uploadStudents = Array.from(new Map(mappedData
+  onProgress("Unificando y procesando directorio de estudiantes...");
+  const studentsMap = new Map<string, any>();
+
+  // 1. Poblar primero con estudiantes derivados del inventario principal
+  mappedData
     .filter(i => i.Estudiante && String(i.Estudiante).trim() !== '')
-    .map((i: InventoryItem) => {
+    .forEach((i: InventoryItem) => {
       const sName = String(i.Estudiante).toUpperCase().trim();
       const sCourse = String(i.Curso || i.metadata?.Curso || i.metadata?.CURSO || 'SIN CURSO').toUpperCase().trim();
-      return [globalNormalize(sName), {
+      const normalizedKey = globalNormalize(sName);
+
+      studentsMap.set(normalizedKey, {
         name: sName,
         course: sCourse,
         phone: i.Telefono || '',
         email: i.Email || '',
         parent_name: i.Apoderado || '',
         parent_phone: i.TelefonoApoderado || ''
-      }];
-    })
-  ).values());
+      });
+    });
+
+  // 2. Sobrescribir/unificar con el listado oficial de la pestaña de estudiantes (si existe)
+  if (studentsData && studentsData.length > 0) {
+    studentsData.forEach((s) => {
+      const sName = s.name.toUpperCase().trim();
+      const normalizedKey = globalNormalize(sName);
+
+      const existing = studentsMap.get(normalizedKey);
+      studentsMap.set(normalizedKey, {
+        name: sName,
+        course: s.course ? s.course.toUpperCase().trim() : (existing?.course || 'SIN CURSO'),
+        instrument: s.instrument ? s.instrument.toUpperCase().trim() : (existing?.instrument || ''),
+        phone: s.phone || existing?.phone || '',
+        email: s.email || existing?.email || '',
+        parent_name: s.parent_name ? s.parent_name.toUpperCase().trim() : (existing?.parent_name || ''),
+        parent_phone: s.parent_phone || existing?.parent_phone || ''
+      });
+    });
+  }
+
+  const uploadStudents = Array.from(studentsMap.values());
 
   if (uploadStudents.length > 0) {
-    onProgress("Actualizando directorio...");
+    onProgress("Actualizando directorio en el servidor...");
     const { error: studError } = await supabase.from('students').upsert(uploadStudents, { onConflict: 'name' });
     if (studError) console.warn("Error upserting students:", studError);
   }
