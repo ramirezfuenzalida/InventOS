@@ -40,132 +40,116 @@ export const syncExcelData = async (
   if (syncError) throw syncError;
 
   // Actualizar base de estudiantes
-  onProgress("Unificando y procesando directorio de estudiantes...");
-  const studentsMap = new Map<string, any>();
-
-  // 1. Poblar primero con estudiantes derivados del inventario principal
-  mappedData
-    .filter(i => i.Estudiante && String(i.Estudiante).trim() !== '')
-    .forEach((i: InventoryItem) => {
-      const sName = String(i.Estudiante).toUpperCase().trim();
-      const sCourse = String(i.Curso || i.metadata?.Curso || i.metadata?.CURSO || 'SIN CURSO').toUpperCase().trim();
-      const normalizedKey = globalNormalize(sName);
-
-      studentsMap.set(normalizedKey, {
-        name: sName,
-        course: sCourse,
-        phone: i.Telefono || '',
-        email: i.Email || '',
-        parent_name: i.Apoderado || '',
-        parent_phone: i.TelefonoApoderado || ''
-      });
-    });
-
-  // 2. Sobrescribir/unificar con el listado oficial de la pestaña de estudiantes (si existe)
+  let uploadStudents: any[] = [];
   if (studentsData && studentsData.length > 0) {
-    studentsData.forEach((s) => {
-      const sName = s.name.toUpperCase().trim();
-      const normalizedKey = globalNormalize(sName);
-
-      const existing = studentsMap.get(normalizedKey);
-      studentsMap.set(normalizedKey, {
-        name: sName,
-        course: s.course ? s.course.toUpperCase().trim() : (existing?.course || 'SIN CURSO'),
-        instrument: s.instrument ? s.instrument.toUpperCase().trim() : (existing?.instrument || ''),
-        phone: s.phone || existing?.phone || '',
-        email: s.email || existing?.email || '',
-        parent_name: s.parent_name ? s.parent_name.toUpperCase().trim() : (existing?.parent_name || ''),
-        parent_phone: s.parent_phone || existing?.parent_phone || ''
-      });
+    onProgress("Procesando directorio oficial de estudiantes...");
+    // Usar ÚNICAMENTE el listado oficial de la pestaña de estudiantes
+    uploadStudents = studentsData.map((s) => {
+      return {
+        name: s.name.toUpperCase().trim(),
+        course: s.course ? s.course.toUpperCase().trim() : 'SIN CURSO',
+        instrument: s.instrument ? s.instrument.toUpperCase().trim() : '',
+        phone: s.phone || '',
+        email: s.email || '',
+        parent_name: s.parent_name ? s.parent_name.toUpperCase().trim() : '',
+        parent_phone: s.parent_phone || ''
+      };
     });
   }
-
-  const uploadStudents = Array.from(studentsMap.values());
 
   if (uploadStudents.length > 0) {
-    onProgress("Actualizando directorio en el servidor...");
+    onProgress("Actualizando directorio oficial en el servidor...");
     const { error: studError } = await supabase.from('students').upsert(uploadStudents, { onConflict: 'name' });
     if (studError) console.warn("Error upserting students:", studError);
-  }
 
-  // 3. Limpieza automática de registros de estudiantes duplicados preexistentes en la base de datos
-  try {
-    const { data: allDbStudents, error: fetchErr } = await supabase
-      .from('students')
-      .select('id, name, course, phone, email, parent_name, parent_phone');
-      
-    if (!fetchErr && allDbStudents) {
-      // Agrupar estudiantes por similitud de nombre
-      const studentGroups = new Map<string, typeof allDbStudents>();
-      
-      allDbStudents.forEach(student => {
-        const cleaned = cleanNameForMatching(student.name);
-        if (!cleaned) return;
+    // Depuración de estudiantes obsoletos/antiguos y duplicados preexistentes
+    try {
+      const { data: allDbStudents, error: fetchErr } = await supabase
+        .from('students')
+        .select('id, name, course, phone, email, parent_name, parent_phone');
         
-        let foundGroupKey: string | null = null;
-        for (const key of studentGroups.keys()) {
-          const keyWords = key.split(" ");
-          const studentWords = cleaned.split(" ");
+      if (!fetchErr && allDbStudents) {
+        const officialNormalizedNames = uploadStudents.map(s => globalNormalize(s.name));
+        const idsToDelete: string[] = [];
+
+        // 1. Identificar estudiantes que ya no figuran en la pestaña oficial del Excel
+        allDbStudents.forEach((dbStudent) => {
+          const normDbName = globalNormalize(dbStudent.name);
+          if (!officialNormalizedNames.includes(normDbName)) {
+            idsToDelete.push(dbStudent.id);
+          }
+        });
+
+        // 2. Ejecutar coincidencia fuzzy sobre el resto para resolver duplicados preexistentes
+        const studentGroups = new Map<string, typeof allDbStudents>();
+        
+        allDbStudents
+          .filter(student => !idsToDelete.includes(student.id))
+          .forEach(student => {
+            const cleaned = cleanNameForMatching(student.name);
+            if (!cleaned) return;
+            
+            let foundGroupKey: string | null = null;
+            for (const key of studentGroups.keys()) {
+              const keyWords = key.split(" ");
+              const studentWords = cleaned.split(" ");
+              
+              if (keyWords.length >= 2 && studentWords.length >= 2) {
+                if (areWordsSimilar(keyWords[0], studentWords[0]) && areWordsSimilar(keyWords[1], studentWords[1])) {
+                  foundGroupKey = key;
+                  break;
+                }
+              } else if (keyWords.length === 1 && studentWords.length === 1) {
+                if (areWordsSimilar(keyWords[0], studentWords[0])) {
+                  foundGroupKey = key;
+                  break;
+                }
+              }
+            }
+            
+            if (foundGroupKey) {
+              studentGroups.get(foundGroupKey)!.push(student);
+            } else {
+              studentGroups.set(cleaned, [student]);
+            }
+          });
           
-          if (keyWords.length >= 2 && studentWords.length >= 2) {
-            if (areWordsSimilar(keyWords[0], studentWords[0]) && areWordsSimilar(keyWords[1], studentWords[1])) {
-              foundGroupKey = key;
-              break;
-            }
-          } else if (keyWords.length === 1 && studentWords.length === 1) {
-            if (areWordsSimilar(keyWords[0], studentWords[0])) {
-              foundGroupKey = key;
-              break;
-            }
+        for (const [_, group] of studentGroups.entries()) {
+          if (group.length > 1) {
+            let bestIndex = 0;
+            let maxScore = -1;
+            
+            group.forEach((s, idx) => {
+              let score = 0;
+              if (s.phone && s.phone.trim() !== '') score += 2;
+              if (s.email && s.email.trim() !== '') score += 2;
+              if (s.parent_name && s.parent_name.trim() !== '') score += 1;
+              if (s.parent_phone && s.parent_phone.trim() !== '') score += 1;
+              score += s.name.length * 0.01;
+              
+              if (score > maxScore) {
+                maxScore = score;
+                bestIndex = idx;
+              }
+            });
+            
+            group.forEach((s, idx) => {
+              if (idx !== bestIndex) {
+                idsToDelete.push(s.id);
+              }
+            });
           }
         }
         
-        if (foundGroupKey) {
-          studentGroups.get(foundGroupKey)!.push(student);
-        } else {
-          studentGroups.set(cleaned, [student]);
-        }
-      });
-      
-      // Para grupos que tengan más de un registro, conservar solo el más completo/oficial
-      const idsToDelete: string[] = [];
-      for (const [_, group] of studentGroups.entries()) {
-        if (group.length > 1) {
-          let bestIndex = 0;
-          let maxScore = -1;
-          
-          group.forEach((s, idx) => {
-            let score = 0;
-            // Incrementar puntuación según los datos de contacto que tenga rellenados
-            if (s.phone && s.phone.trim() !== '') score += 2;
-            if (s.email && s.email.trim() !== '') score += 2;
-            if (s.parent_name && s.parent_name.trim() !== '') score += 1;
-            if (s.parent_phone && s.parent_phone.trim() !== '') score += 1;
-            // Un pequeño beneficio adicional para nombres más largos (generalmente el nombre oficial completo)
-            score += s.name.length * 0.01;
-            
-            if (score > maxScore) {
-              maxScore = score;
-              bestIndex = idx;
-            }
-          });
-          
-          group.forEach((s, idx) => {
-            if (idx !== bestIndex) {
-              idsToDelete.push(s.id);
-            }
-          });
+        if (idsToDelete.length > 0) {
+          onProgress(`Depurando ${idsToDelete.length} registros duplicados u obsoletos del directorio...`);
+          const { error: deleteErr } = await supabase.from('students').delete().in('id', idsToDelete);
+          if (deleteErr) console.warn("Error al eliminar estudiantes obsoletos/duplicados:", deleteErr);
         }
       }
-      
-      if (idsToDelete.length > 0) {
-        onProgress(`Limpiando ${idsToDelete.length} registros de estudiantes duplicados...`);
-        const { error: deleteErr } = await supabase.from('students').delete().in('id', idsToDelete);
-        if (deleteErr) console.warn("Error al eliminar estudiantes duplicados:", deleteErr);
-      }
+    } catch (cleanErr) {
+      console.warn("Error en la depuración de estudiantes del servidor:", cleanErr);
     }
-  } catch (cleanErr) {
-    console.warn("Error en la rutina de limpieza de estudiantes duplicados:", cleanErr);
   }
 
   // Sincronizar estados activos desde el Historial
