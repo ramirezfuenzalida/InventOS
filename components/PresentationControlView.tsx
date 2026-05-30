@@ -51,6 +51,7 @@ interface PresentationSession {
   id: string;
   name: string;
   date: string;
+  lugar?: string;
   status: 'activa' | 'completada';
   created_at: string;
   updated_at: string;
@@ -119,6 +120,7 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEventName, setNewEventName] = useState('');
   const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newEventLugar, setNewEventLugar] = useState('');
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [manualInput, setManualInput] = useState('');
@@ -244,6 +246,7 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
       id: newSessionId,
       name: newEventName.trim(),
       date: newEventDate,
+      lugar: newEventLugar.trim() || 'No especificado',
       status: 'activa' as const,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -259,6 +262,7 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
       setActiveSession(newSession);
       setShowCreateModal(false);
       setNewEventName('');
+      setNewEventLugar('');
     } else {
       alert(`Error al crear la sesión: ${error.message}`);
     }
@@ -605,7 +609,7 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
     doc.text('REPORTE DE CONTROL: PRESENTACIÓN EXTERNA', 15, 16);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Evento: ${activeSession.name.toUpperCase()} (Fecha: ${activeSession.date})`, 15, 24);
+    doc.text(`Evento: ${activeSession.name.toUpperCase()} (Lugar: ${activeSession.lugar || 'No especificado'} • Fecha: ${activeSession.date})`, 15, 24);
     doc.setTextColor(148, 163, 184);
     doc.setFontSize(9);
     doc.text(`Orquesta Sinfónica William Taylor • Generado: ${dateStr} a las ${timeStr}`, 15, 32);
@@ -728,6 +732,17 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
                   value={newEventName} 
                   onChange={e => setNewEventName(e.target.value)} 
                   placeholder="Ej. Desfile Glorias Navales, Concierto Teatro"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 px-4 font-bold text-white text-sm outline-none focus:border-indigo-500 transition-all"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Lugar del Evento</label>
+                <input 
+                  type="text" 
+                  value={newEventLugar} 
+                  onChange={e => setNewEventLugar(e.target.value)} 
+                  placeholder="Ej. Teatro Municipal, Plaza de Armas"
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3.5 px-4 font-bold text-white text-sm outline-none focus:border-indigo-500 transition-all"
                 />
               </div>
@@ -863,7 +878,7 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
               <div
                 key={session.id}
                 onClick={() => setActiveSession(session)}
-                className="bg-slate-900/40 border border-slate-800/80 p-6 rounded-[2rem] hover:border-indigo-500/40 hover:bg-slate-900/60 transition-all duration-300 cursor-pointer group flex flex-col justify-between min-h-[220px]"
+                className="bg-slate-900/40 border border-slate-800/80 p-6 rounded-[2rem] hover:border-indigo-500/40 hover:bg-slate-900/60 transition-all duration-300 cursor-pointer group flex flex-col justify-between min-h-[240px]"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -883,11 +898,18 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
                     </button>
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <h3 className="text-lg font-black text-white uppercase tracking-tight group-hover:text-indigo-400 transition-colors leading-tight">
                       {session.name}
                     </h3>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mt-2">
+                    
+                    {session.lugar && (
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-indigo-500" /> {session.lugar}
+                      </p>
+                    )}
+
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5" /> {session.date}
                     </p>
                   </div>
@@ -924,9 +946,11 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
                   </span>
                 )}
               </div>
-              <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" /> Fecha: {activeSession.date} • ID: {activeSession.id}
-              </p>
+              <div className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Fecha: {activeSession.date}</span>
+                {activeSession.lugar && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-indigo-450" /> Lugar: {activeSession.lugar}</span>}
+                <span>ID: {activeSession.id}</span>
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -947,7 +971,7 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
             </div>
           </div>
 
-          {/* ── SECCIÓN DE FILTROS POR FAMILIA DE INSTRUMENTOS (VIBRANTE Y EN HORIZONTAL) ── */}
+          {/* ── SECCIÓN DE FILTROS POR FAMILIA DE INSTRUMENTOS ── */}
           <div className="bg-slate-900/20 border border-slate-900 p-4 rounded-[2rem] overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-2">
             {[
               { id: 'TODOS', label: 'Todos' },
@@ -1200,7 +1224,7 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
                             <span className="text-xs font-black text-white uppercase truncate block">
                               {item.instrument_name}
                             </span>
-                            <span className="text-[7.5px] font-bold text-slate-500 uppercase tracking-widest px-1.5 py-0.5 bg-slate-950 rounded border border-slate-850">
+                            <span className="text-[7.5px] font-bold text-slate-600 uppercase tracking-widest px-1.5 py-0.5 bg-slate-950 rounded border border-slate-850">
                               {getItemFamily(item)}
                             </span>
                           </div>

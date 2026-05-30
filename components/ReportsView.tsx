@@ -218,7 +218,9 @@ const ReportsView: React.FC<ReportsViewProps> = ({ history, onClearHistory }) =>
     doc.text('REPORTE DE PRESENTACIÓN EXTERNA', 14, 16);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Evento: ${eventLabel.toUpperCase()}`, 14, 24);
+    
+    const placeInfo = activePresSession?.lugar ? `Lugar: ${activePresSession.lugar} • ` : '';
+    doc.text(`Evento: ${eventLabel.toUpperCase()} (${placeInfo}Fecha: ${activePresSession?.date || '—'})`, 14, 24);
     doc.setTextColor(148, 163, 184);
     doc.setFontSize(8);
     doc.text(`Orquesta Sinfónica William Taylor • Generado el ${new Date().toLocaleDateString()}`, 14, 32);
@@ -526,7 +528,14 @@ const ReportsView: React.FC<ReportsViewProps> = ({ history, onClearHistory }) =>
                               {parentSession?.date || '—'}
                             </td>
                             <td className="px-8 py-6 text-xs font-black text-white uppercase truncate max-w-[200px]">
-                              {parentSession?.name || '—'}
+                              <div className="flex flex-col">
+                                <span>{parentSession?.name || '—'}</span>
+                                {parentSession?.lugar && (
+                                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1 mt-1">
+                                    📍 {parentSession.lugar}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-8 py-6">
                               <div className="flex flex-col">
