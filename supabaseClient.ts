@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const DEFAULT_URL = 'https://ktbtleaevnvvqqmknaiv.supabase.co';
-const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0YnRsZWFldm52dnFxbWtuYWl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNzY5MzQsImV4cCI6MjA5NTc1MjkzNH0.O52Kf8bw7fGDLGjsGWx5MTeIebIVpu5x-FYrrRQLk_Q';
+const DEFAULT_URL = '';
+const DEFAULT_KEY = '';
 
 const getSafeEnv = (val: any): string | null => {
   if (!val) return null;
