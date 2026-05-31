@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const DEFAULT_URL = 'https://ejjobdbywnolopistcvs.supabase.co';
-const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqam9iZGJ5d25vbG9waXN0Y3ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyODc4MDYsImV4cCI6MjA4Njg2MzgwNn0.SO1AcS_ULSQUbvRjhJVu0_Ptx6Z2YhJqTJ8KMJV51pw';
+const DEFAULT_URL = 'https://ktbtleaevnvvqqmknaiv.supabase.co';
+const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0YnRsZWFldm52dnFxbWtuYWl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNzY5MzQsImV4cCI6MjA5NTc1MjkzNH0.O52Kf8bw7fGDLGjsGWx5MTeIebIVpu5x-FYrrRQLk_Q';
 
 const getSafeEnv = (val: any): string | null => {
   if (!val) return null;
