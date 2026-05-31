@@ -163,7 +163,8 @@ const DirectoryView: React.FC = () => {
 
     const filteredStudents = students.filter(s =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.instrument && s.instrument.toLowerCase().includes(searchTerm.toLowerCase()))
+        (s.instrument && s.instrument.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (s.course && s.course.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleSelectStudent = (student: Student) => {
@@ -623,7 +624,7 @@ const DirectoryView: React.FC = () => {
                         <Search className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 text-slate-700 group-focus-within:text-white transition-colors" />
                         <input
                             type="text"
-                            placeholder="FILTRAR POR NOMBRE O INSTRUMENTO..."
+                            placeholder="FILTRAR POR NOMBRE, CURSO O INSTRUMENTO..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-slate-950/60 border-2 border-white/5 rounded-[30px] md:rounded-[40px] py-5 md:py-8 pl-16 md:pl-20 pr-8 md:pr-10 text-xs md:text-sm font-black text-white focus:border-indigo-500/40 outline-none transition-all uppercase placeholder:text-slate-800 placeholder:tracking-widest shadow-2xl"
@@ -676,8 +677,14 @@ const DirectoryView: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 whitespace-nowrap">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white/5 px-4 py-1.5 rounded-full border border-white/5">
-                                            {student.course}
+                                        <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border ${
+                                            student.course && student.course.toUpperCase().includes('MEDIO')
+                                                ? 'text-white bg-violet-600 border-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.6)]'
+                                                : student.course && student.course.toUpperCase().includes('BÁSICO') || student.course && student.course.toUpperCase().includes('BASICO')
+                                                ? 'text-white bg-orange-500 border-orange-300 shadow-[0_0_12px_rgba(249,115,22,0.6)]'
+                                                : 'text-slate-400 bg-white/5 border-white/5'
+                                        }`}>
+                                            {student.course || 'SIN CURSO'}
                                         </span>
                                     </td>
                                     <td className="px-8 py-6 whitespace-nowrap">
