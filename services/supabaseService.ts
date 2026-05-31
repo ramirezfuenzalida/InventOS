@@ -192,25 +192,72 @@ export const syncExcelData = async (
     onProgress(`Restaurando ${activeLoans.length} préstamos...`);
     
     for (const loan of activeLoans) {
-      if (loan.serie) {
-        await supabase.from('inventory')
-          .update({ 
-            Prestado: 'SÍ', 
-            Ubicacion: 'HOGAR',
-            Estudiante: loan.estudiante,
-            Curso: loan.curso
-          })
-          .eq('Serie', loan.serie);
-      } else if (loan.instrumentName && loan.estudiante) {
-        await supabase.from('inventory')
-          .update({ 
-            Prestado: 'SÍ', 
-            Ubicacion: 'HOGAR',
-            Estudiante: loan.estudiante,
-            Curso: loan.curso
-          })
+      let updated = false;
+      
+      // 1. Intentar restaurar usando la ID única del instrumento si coincide con la Serie o Nombre
+      if (loan.instrumentId) {
+        try {
+          const { data: matchedItem } = await supabase
+            .from('inventory')
+            .select('id, Serie, Instrumento')
+            .eq('id', String(loan.instrumentId))
+            .maybeSingle();
+            
+          if (matchedItem && (matchedItem.Serie === loan.serie || globalNormalize(matchedItem.Instrumento) === globalNormalize(loan.instrumentName))) {
+            await supabase.from('inventory')
+              .update({ 
+                Prestado: 'SÍ', 
+                Ubicacion: 'HOGAR',
+                Estudiante: loan.estudiante,
+                Curso: loan.curso
+              })
+              .eq('id', matchedItem.id);
+            updated = true;
+          }
+        } catch (err) {
+          console.warn("Error al validar coincidencia por ID:", err);
+        }
+      }
+      
+      // 2. Fallback: Buscar por Serie pero actualizar solo UN instrumento que no esté prestado aún
+      if (!updated && loan.serie) {
+        const { data: candidates } = await supabase
+          .from('inventory')
+          .select('id')
+          .eq('Serie', loan.serie)
+          .eq('Prestado', 'NO');
+          
+        if (candidates && candidates.length > 0) {
+          await supabase.from('inventory')
+            .update({ 
+              Prestado: 'SÍ', 
+              Ubicacion: 'HOGAR',
+              Estudiante: loan.estudiante,
+              Curso: loan.curso
+            })
+            .eq('id', candidates[0].id);
+          updated = true;
+        }
+      }
+      
+      // 3. Segundo Fallback: Por nombre del instrumento (sin coincidencia de serie) asignando solo a uno libre
+      if (!updated && loan.instrumentName && loan.estudiante) {
+        const { data: candidates } = await supabase
+          .from('inventory')
+          .select('id')
           .eq('Instrumento', loan.instrumentName)
-          .eq('Estudiante', loan.estudiante);
+          .eq('Prestado', 'NO');
+          
+        if (candidates && candidates.length > 0) {
+          await supabase.from('inventory')
+            .update({ 
+              Prestado: 'SÍ', 
+              Ubicacion: 'HOGAR',
+              Estudiante: loan.estudiante,
+              Curso: loan.curso
+            })
+            .eq('id', candidates[0].id);
+        }
       }
     }
   }
