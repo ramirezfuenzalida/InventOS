@@ -139,6 +139,10 @@ const DirectoryView: React.FC = () => {
         };
     }, []);
 
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [viewMode]);
+
     const fetchStudents = async () => {
         setLoading(true);
         try {
