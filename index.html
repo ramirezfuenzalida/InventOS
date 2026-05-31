@@ -73,9 +73,9 @@
       console.warn("Tailwind CDN no se cargó; se usará fallback CSS.");
     }
 
-    // Initialize theme safely
+    // Initialize theme safely (Modo oscuro por defecto en todas las versiones)
     try {
-      if (localStorage.theme === 'light' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      if (localStorage.theme === 'light') {
         document.documentElement.classList.remove('dark')
       } else {
         document.documentElement.classList.add('dark')
