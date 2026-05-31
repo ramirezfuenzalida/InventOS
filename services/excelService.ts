@@ -30,6 +30,11 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
+        // Obtener cabeceras reales por posición física de columna (A=0, B=1, C=2, D=3) para asegurar mapeo de Curso en Columna D
+        const rowsAsArrays = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 });
+        const headers = rowsAsArrays.length > 0 ? (rowsAsArrays[0] as string[]) : [];
+        const columnDHeader = headers.length > 3 ? String(headers[3]).trim() : '';
+
         // Find students sheet (if any)
         const studentSheetName = wb.SheetNames.find(name => {
           const n = globalNormalize(name).replace(/\s+/g, '');
@@ -102,6 +107,20 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
         
         const mappedData: Record<string, unknown>[] = rawData.map((row, index) => {
           const mappedItem: Record<string, string> = { id: String(index + 1) };
+
+          // Extraer prioritariamente la columna D física (index 3) como Curso
+          let parsedCurso = '';
+          if (columnDHeader && row[columnDHeader] !== undefined) {
+            parsedCurso = String(row[columnDHeader]);
+          } else if (row['__EMPTY_3'] !== undefined) {
+            parsedCurso = String(row['__EMPTY_3']);
+          } else if (row['__empty_3'] !== undefined) {
+            parsedCurso = String(row['__empty_3']);
+          }
+          if (parsedCurso && parsedCurso.trim() !== '') {
+            mappedItem.Curso = parsedCurso.trim();
+          }
+
           const standardFields: Record<string, string[]> = {
             Instrumento: ['instrumento', 'item', 'descripcion del instrumento', 'nombre del instrumento', 'instrumentos oswt'],
             Familia: ['familia', 'seccion', 'categoria', 'grupo', 'familia de instrumento'],
@@ -187,8 +206,20 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             resultRow.Estudiante = matchedName;
             
             const officialStudent = validStudents.find(s => s.name === matchedName);
-            if (officialStudent && officialStudent.course) {
-              resultRow.Curso = officialStudent.course;
+            if (officialStudent) {
+              // Si el estudiante en el listado oficial no tiene curso asignado (o tiene SIN CURSO), 
+              // pero en la columna D del listado de instrumentos sí viene su curso, 
+              // enriquecemos la base de datos de estudiantes.
+              if (resultRow.Curso && String(resultRow.Curso).trim() !== '' && String(resultRow.Curso).toUpperCase() !== 'SIN CURSO') {
+                if (!officialStudent.course || officialStudent.course === 'SIN CURSO') {
+                  officialStudent.course = String(resultRow.Curso).toUpperCase().trim();
+                }
+              }
+              
+              // Si el estudiante tiene un curso oficial válido asignado, lo respetamos
+              if (officialStudent.course && officialStudent.course !== 'SIN CURSO') {
+                resultRow.Curso = officialStudent.course;
+              }
             }
           }
 
