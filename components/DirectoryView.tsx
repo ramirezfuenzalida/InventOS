@@ -634,51 +634,73 @@ const DirectoryView: React.FC = () => {
                     </button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-10">
-                {filteredStudents.map((student, idx) => (
-                    <div
-                        key={student.id}
-                        className="group relative bg-[#0B0F1A] border border-white/5 p-6 sm:p-10 rounded-[32px] sm:rounded-[64px] hover:bg-[#121828] transition-all hover:-translate-y-3 cursor-pointer shadow-2xl animate-in fade-in zoom-in duration-500 overflow-hidden"
-                        style={{ animationDelay: `${idx * 40}ms` }}
-                        onClick={() => handleSelectStudent(student)}
-                    >
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/5 blur-[60px] rounded-full group-hover:bg-indigo-600/20 transition-all duration-1000"></div>
-                        <div className="flex flex-col items-center text-center relative z-10">
-                            <div className="relative mb-10 pt-2">
-                                <div className="w-44 h-44 rounded-[48px] overflow-hidden border-2 border-white/10 bg-slate-950 p-1 group-hover:p-0 transition-all duration-500 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.5)] group-hover:shadow-indigo-900/40">
-                                    {student.photo_url ? (
-                                        <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover rounded-[46px] group-hover:rounded-[48px] transition-all" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-white/[0.02] text-slate-800">
-                                            <User className="w-20 h-20" />
+            <div className="bg-slate-900/20 border border-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in duration-500">
+                <div className="overflow-x-auto custom-scrollbar w-full max-w-full">
+                    <table className="min-w-full table-auto">
+                        <thead className="bg-[#020617] border-b border-slate-900/50">
+                            <tr>
+                                <th className="px-8 py-6 text-left text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] w-16">#</th>
+                                <th className="px-8 py-6 text-left text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Nombre y Apellidos</th>
+                                <th className="px-8 py-6 text-left text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Curso</th>
+                                <th className="px-8 py-6 text-left text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Instrumento</th>
+                                <th className="px-8 py-6 text-left text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Teléfono Personal</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-900/30 bg-[#020617]/40">
+                            {filteredStudents.map((student, idx) => (
+                                <tr
+                                    key={student.id}
+                                    className="group hover:bg-slate-900/40 border-b border-slate-900/10 cursor-pointer transition-colors"
+                                    onClick={() => handleSelectStudent(student)}
+                                >
+                                    <td className="px-8 py-6 whitespace-nowrap">
+                                        <span className="text-[11px] font-black text-slate-700 tracking-widest">{idx + 1}</span>
+                                    </td>
+                                    <td className="px-8 py-6 whitespace-nowrap">
+                                        <div className="flex items-center gap-3">
+                                            {/* Mini avatar thumbnail for visual premium touch */}
+                                            <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 bg-slate-950 flex items-center justify-center shrink-0">
+                                                {student.photo_url ? (
+                                                    <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User className="w-4 h-4 text-slate-600" />
+                                                )}
+                                            </div>
+                                            <span className="text-[13px] font-black text-white tracking-tight uppercase group-hover:text-indigo-400 transition-colors">
+                                                {student.name}
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="absolute -bottom-3 right-3 bg-white text-slate-950 p-3.5 rounded-2xl shadow-2xl group-hover:scale-110 group-hover:rotate-12 transition-all">
-                                    <Eye className="w-5 h-5" />
-                                </div>
-                            </div>
-                            <div className="space-y-2 w-full px-2">
-                                <h4 className="text-lg font-black text-white italic tracking-tighter uppercase leading-tight group-hover:text-indigo-400 transition-colors">{student.name}</h4>
-                                <div className="flex flex-col gap-1.5">
-                                    <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.3em]">{student.instrument || 'SIN INSTRUMENTO'}</p>
-                                    <div className="inline-flex py-1 px-3 bg-white/5 rounded-full self-center border border-white/5">
-                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{student.course}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-                {filteredStudents.length === 0 && (
-                    <div className="col-span-full py-64 text-center bg-slate-900/10 rounded-[80px] border-4 border-dashed border-white/5 mx-auto w-full max-w-4xl">
-                        <div className="bg-white/5 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-10">
-                            <Search className="w-10 h-10 text-slate-700" />
-                        </div>
-                        <h3 className="text-2xl font-black text-slate-400 uppercase tracking-[0.5em]">Sin resultados</h3>
-                        <p className="text-sm font-bold text-slate-700 uppercase tracking-widest mt-6">Intenta con otros criterios de búsqueda</p>
-                    </div>
-                )}
+                                    </td>
+                                    <td className="px-8 py-6 whitespace-nowrap">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white/5 px-4 py-1.5 rounded-full border border-white/5">
+                                            {student.course}
+                                        </span>
+                                    </td>
+                                    <td className="px-8 py-6 whitespace-nowrap">
+                                        <span className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">
+                                            {student.instrument || 'SIN INSTRUMENTO'}
+                                        </span>
+                                    </td>
+                                    <td className="px-8 py-6 whitespace-nowrap">
+                                        <span className="text-[12px] font-black text-emerald-400 font-mono tracking-tight">
+                                            {student.phone || 'SIN REGISTRO'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredStudents.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-8 py-32 text-center">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <Search className="w-10 h-10 text-slate-800" />
+                                            <h3 className="text-sm font-black text-slate-600 uppercase tracking-[0.3em]">Sin resultados</h3>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

@@ -1017,23 +1017,25 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
                     <div className="bg-slate-950 p-1.5 rounded-2xl flex gap-2 border border-slate-800">
                       <button
                         onClick={() => { setScanMode('salida'); stopScanner(); setScanResult(null); }}
-                        className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                        className={`flex-1 py-4 px-6 rounded-xl text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all duration-300 ${
                           scanMode === 'salida'
-                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
-                            : 'text-slate-500 hover:text-slate-400'
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-655 text-white shadow-[0_8px_20px_rgba(245,158,11,0.35)] scale-[1.02] border border-amber-400/20'
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
                         }`}
                       >
-                        <ArrowLeftRight className="w-4 h-4" /> 1. Modo Salida (Saca Instrumento)
+                        <ArrowLeftRight className={`w-4 h-4 transition-transform duration-300 ${scanMode === 'salida' ? 'rotate-180 scale-110' : ''}`} /> 
+                        <span>Modo Salida</span>
                       </button>
                       <button
                         onClick={() => { setScanMode('retorno'); stopScanner(); setScanResult(null); }}
-                        className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                        className={`flex-1 py-4 px-6 rounded-xl text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all duration-300 ${
                           scanMode === 'retorno'
-                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                            : 'text-slate-500 hover:text-slate-400'
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] scale-[1.02] border border-emerald-400/20'
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
                         }`}
                       >
-                        <CheckCircle className="w-4 h-4" /> 2. Modo Retorno (Devuelve Instrumento)
+                        <CheckCircle className={`w-4 h-4 transition-transform duration-300 ${scanMode === 'retorno' ? 'scale-110' : ''}`} /> 
+                        <span>Modo Retorno</span>
                       </button>
                     </div>
 
