@@ -1,6 +1,6 @@
 
-import React, { useState, useMemo } from 'react';
-import { Search, Music, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, X, Calendar, AlertCircle, ChevronDown, PenTool } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Search, Music, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, X, Calendar, AlertCircle, ChevronDown, PenTool, Camera, Loader2 } from 'lucide-react';
 import { InventoryItem, Student } from '../types.ts';
 import { isItemLoaned, globalNormalize } from '../utils.ts';
 
