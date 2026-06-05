@@ -7,6 +7,17 @@ ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 
+-- Asegurar restricción UNIQUE en public.students(name) para soportar cláusulas ON CONFLICT en RPC y upserts
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'students_name_key'
+    ) THEN
+        ALTER TABLE public.students ADD CONSTRAINT students_name_key UNIQUE (name);
+    END IF;
+END;
+$$;
+
 -- 2. Limpieza de políticas permisivas preexistentes para evitar brechas de seguridad
 DROP POLICY IF EXISTS "Enable all access for anon" ON public.inventory;
 DROP POLICY IF EXISTS "inventory_write" ON public.inventory;
