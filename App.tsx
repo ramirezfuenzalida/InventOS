@@ -27,6 +27,7 @@ import QRScannerView from './components/QRScannerView.tsx';
 import { LoginView } from './components/LoginView.tsx';
 import PresentationControlView from './components/PresentationControlView.tsx';
 import { LandingView } from './components/LandingView.tsx';
+import StudentDashboardStats from './components/StudentDashboardStats.tsx';
 
 // Hooks
 import { useInventoryData } from './hooks/useInventoryData.ts';
@@ -246,6 +247,28 @@ const App: React.FC = () => {
     };
   }, [data]);
 
+  const studentStats = useMemo(() => {
+    const list = students.length > 0 ? students : uniqueStudents;
+    let basicaCount = 0;
+    let mediaCount = 0;
+    
+    list.forEach(student => {
+      const courseUpper = (student.course || '').toUpperCase();
+      if (courseUpper.includes('BÁSICO') || courseUpper.includes('BASICO')) {
+        basicaCount++;
+      } else if (courseUpper.includes('MEDIO')) {
+        mediaCount++;
+      }
+    });
+    
+    return {
+      total: list.length,
+      basica: basicaCount,
+      media: mediaCount,
+      otros: list.length - basicaCount - mediaCount
+    };
+  }, [students, uniqueStudents]);
+
   if (isAuthLoading || isLoading) {
     return (
       <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center">
@@ -429,6 +452,7 @@ const App: React.FC = () => {
                     else if (f === 'bueno') setViewMode('bueno-detail');
                     else setViewMode('list');
                   }} />
+                  <StudentDashboardStats stats={studentStats} onViewDirectory={() => setViewMode('directory')} />
                   <Charts stats={stats} />
                   <MonitorStats stats={stats} onMonitorClick={(name) => { setSelectedMonitor(name); setViewMode('monitor-detail'); }} />
                 </div>
