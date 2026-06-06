@@ -30,9 +30,15 @@ import { supabase } from '../supabaseClient';
 
 import { Student } from '../types';
 
-const DirectoryView: React.FC = () => {
+interface DirectoryViewProps {
+    initialFilter?: 'all' | 'basica' | 'media';
+    onBackToDashboard?: () => void;
+}
+
+const DirectoryView: React.FC<DirectoryViewProps> = ({ initialFilter = 'all', onBackToDashboard }) => {
     const [students, setStudents] = useState<Student[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState<'all' | 'basica' | 'media'>(initialFilter);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'detail' | 'edit'>('grid');
     const [loading, setLoading] = useState(false);
@@ -161,11 +167,18 @@ const DirectoryView: React.FC = () => {
         }
     };
 
-    const filteredStudents = students.filter(s =>
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.instrument && s.instrument.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (s.course && s.course.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredStudents = students.filter(s => {
+        const courseUpper = (s.course || '').toUpperCase();
+        if (activeFilter === 'basica') {
+            if (!courseUpper.includes('BÁSICO') && !courseUpper.includes('BASICO')) return false;
+        } else if (activeFilter === 'media') {
+            if (!courseUpper.includes('MEDIO')) return false;
+        }
+        
+        return s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (s.instrument && s.instrument.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (s.course && s.course.toLowerCase().includes(searchTerm.toLowerCase()));
+    });
 
     const handleSelectStudent = (student: Student) => {
         setSelectedStudent(student);
@@ -609,14 +622,25 @@ const DirectoryView: React.FC = () => {
     return (
         <div className="space-y-16 animate-in fade-in duration-700">
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-12">
-                <div className="space-y-4 md:space-y-6 w-full">
-                    <h2 className="text-3xl md:text-[5rem] font-black italic tracking-tighter text-white uppercase leading-[0.9] md:leading-[0.75] animate-in slide-in-from-left duration-1000">
-                        Estudiantes <br />
-                        <span className="text-indigo-500">orquesta</span>
-                    </h2>
-                    <div className="flex items-center gap-3 md:gap-6 py-2 md:py-4">
-                        <div className="h-0.5 md:h-1 w-12 md:w-24 bg-indigo-600 rounded-full"></div>
-                        <p className="text-slate-600 font-bold text-[8px] md:text-xs tracking-[0.3em] md:tracking-[0.5em] uppercase">Base de Datos Centralizada • OSWT</p>
+                <div className="flex items-center gap-6">
+                    {onBackToDashboard && (
+                        <button 
+                            onClick={onBackToDashboard} 
+                            className="p-4 bg-[#0A0C14] hover:bg-slate-900 rounded-3xl transition-all border border-white/5 hover:border-indigo-500/50 group shrink-0"
+                            title="Volver al Dashboard"
+                        >
+                            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-slate-400 group-hover:text-white" />
+                        </button>
+                    )}
+                    <div className="space-y-4 md:space-y-6 w-full">
+                        <h2 className="text-3xl md:text-[5rem] font-black italic tracking-tighter text-white uppercase leading-[0.9] md:leading-[0.75] animate-in slide-in-from-left duration-1000">
+                            Estudiantes <br />
+                            <span className="text-indigo-500">orquesta</span>
+                        </h2>
+                        <div className="flex items-center gap-3 md:gap-6 py-2 md:py-4">
+                            <div className="h-0.5 md:h-1 w-12 md:w-24 bg-indigo-600 rounded-full"></div>
+                            <p className="text-slate-600 font-bold text-[8px] md:text-xs tracking-[0.3em] md:tracking-[0.5em] uppercase">Base de Datos Centralizada • OSWT</p>
+                        </div>
                     </div>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-6 w-full xl:w-auto">
@@ -639,6 +663,41 @@ const DirectoryView: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Pestañas de Filtro Rápido (Básica / Media) */}
+            <div className="flex flex-wrap gap-3 p-1.5 bg-[#0A0C14] border border-white/5 rounded-3xl w-fit">
+                <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        activeFilter === 'all'
+                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                    Todos ({students.length})
+                </button>
+                <button
+                    onClick={() => setActiveFilter('basica')}
+                    className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        activeFilter === 'basica'
+                            ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                    Enseñanza Básica ({students.filter(s => { const c = (s.course || '').toUpperCase(); return c.includes('BÁSICO') || c.includes('BASICO'); }).length})
+                </button>
+                <button
+                    onClick={() => setActiveFilter('media')}
+                    className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        activeFilter === 'media'
+                            ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                    Enseñanza Media ({students.filter(s => (s.course || '').toUpperCase().includes('MEDIO')).length})
+                </button>
+            </div>
+
             <div className="bg-slate-900/20 border border-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in duration-500">
                 <div className="overflow-x-auto custom-scrollbar w-full max-w-full">
                     <table className="min-w-full table-auto">

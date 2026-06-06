@@ -10,7 +10,7 @@ interface StudentStats {
 
 interface StudentDashboardStatsProps {
   stats: StudentStats;
-  onViewDirectory: () => void;
+  onViewDirectory: (filter: 'all' | 'basica' | 'media') => void;
 }
 
 const StudentDashboardStats: React.FC<StudentDashboardStatsProps> = ({ stats, onViewDirectory }) => {
@@ -29,7 +29,7 @@ const StudentDashboardStats: React.FC<StudentDashboardStatsProps> = ({ stats, on
           </p>
         </div>
         <button 
-          onClick={onViewDirectory}
+          onClick={() => onViewDirectory('all')}
           className="text-xs font-black uppercase tracking-widest text-indigo-400 hover:text-white flex items-center gap-2 group transition-colors self-start sm:self-auto"
         >
           Ver Directorio Completo 
@@ -40,7 +40,7 @@ const StudentDashboardStats: React.FC<StudentDashboardStatsProps> = ({ stats, on
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card Enseñanza Básica */}
         <div 
-          onClick={onViewDirectory}
+          onClick={() => onViewDirectory('basica')}
           className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-lg relative overflow-hidden hover:border-orange-500/40 transition-all duration-300 group cursor-pointer active:scale-98"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl rounded-full"></div>
@@ -77,7 +77,7 @@ const StudentDashboardStats: React.FC<StudentDashboardStatsProps> = ({ stats, on
 
         {/* Card Enseñanza Media */}
         <div 
-          onClick={onViewDirectory}
+          onClick={() => onViewDirectory('media')}
           className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-lg relative overflow-hidden hover:border-violet-500/40 transition-all duration-300 group cursor-pointer active:scale-98"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-violet-600/5 blur-3xl rounded-full"></div>
@@ -114,7 +114,7 @@ const StudentDashboardStats: React.FC<StudentDashboardStatsProps> = ({ stats, on
 
         {/* Card Resumen / Total */}
         <div 
-          onClick={onViewDirectory}
+          onClick={() => onViewDirectory('all')}
           className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-[2rem] shadow-lg relative overflow-hidden hover:border-indigo-500/40 transition-all duration-300 group cursor-pointer active:scale-98"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full"></div>

@@ -58,10 +58,19 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
     if (isStudentModeUrl) return 'student-check';
     return 'landing';
   });
+  const [studentDirectoryFilter, setStudentDirectoryFilter] = useState<'all' | 'basica' | 'media'>('all');
+
+  const setViewMode = (mode: ViewMode) => {
+    if (mode !== 'directory') {
+      // Si navegamos fuera de directory, también es buena idea dejarlo limpio para el siguiente uso
+      setStudentDirectoryFilter('all');
+    }
+    setViewModeState(mode);
+  };
   const [selectedMonitor, setSelectedMonitor] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -452,13 +461,24 @@ const App: React.FC = () => {
                     else if (f === 'bueno') setViewMode('bueno-detail');
                     else setViewMode('list');
                   }} />
-                  <StudentDashboardStats stats={studentStats} onViewDirectory={() => setViewMode('directory')} />
+                  <StudentDashboardStats 
+                    stats={studentStats} 
+                    onViewDirectory={(filter) => {
+                      setStudentDirectoryFilter(filter);
+                      setViewModeState('directory');
+                    }} 
+                  />
                   <Charts stats={stats} />
                   <MonitorStats stats={stats} onMonitorClick={(name) => { setSelectedMonitor(name); setViewMode('monitor-detail'); }} />
                 </div>
               )}
               {viewMode === 'student-check' && <StudentCheckOut inventory={data} onConfirm={performCheckout} onReturn={performReturn} onCancel={() => setViewMode('dashboard')} availableStudents={uniqueStudents} />}
-              {viewMode === 'directory' && <DirectoryView />}
+              {viewMode === 'directory' && (
+                <DirectoryView 
+                  initialFilter={studentDirectoryFilter} 
+                  onBackToDashboard={() => setViewMode('dashboard')}
+                />
+              )}
               {viewMode === 'reports' && <ReportsView history={history} onClearHistory={() => setShowHistoryDeleteConfirm(true)} />}
               {viewMode === 'qr-access' && <QRAccessView />}
               {viewMode === 'qr-scanner' && <QRScannerView inventory={data} onViewInstrument={(item) => setSelectedInstrument(item)} />}
