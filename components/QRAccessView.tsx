@@ -4,7 +4,6 @@ import { Printer, ExternalLink, Info, Smartphone, CheckCircle } from 'lucide-rea
 
 const QRAccessView: React.FC = () => {
   // Estado para la URL base, permitiendo edición manual para corregir "localhost"
-  // Default to detected network IP if on localhost for instant usability
   const [customBaseUrl, setCustomBaseUrl] = React.useState(
     window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://192.168.1.52:3000'
@@ -12,152 +11,133 @@ const QRAccessView: React.FC = () => {
   );
   const studentUrl = `${customBaseUrl}/?mode=student`;
 
-  // Detectar si es localhost para mostrar advertencia
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   const handlePrint = () => {
-    const qrSvg = document.getElementById('student-access-qr');
-    if (!qrSvg) return;
-
-    const svgHtml = qrSvg.outerHTML;
-    const logoUrl = window.location.origin + "/logo_orquesta_sinfonica_wt.png";
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Cartel de Acceso - OSWT</title>
-          <style>
-            @media print {
-              body { margin: 0; }
-              @page { size: portrait; margin: 1.5cm; }
-            }
-            body {
-              font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              min-height: 100vh;
-              background-color: #ffffff;
-              color: #020617;
-              margin: 0;
-              padding: 0;
-            }
-            .poster-card {
-              width: 100%;
-              max-width: 650px;
-              padding: 50px;
-              border: 8px double #4f46e5;
-              border-radius: 40px;
-              text-align: center;
-              box-sizing: border-box;
-            }
-            .logo-container {
-              margin-bottom: 24px;
-            }
-            .logo-img {
-              height: 90px;
-              width: auto;
-            }
-            .title-main {
-              font-size: 30px;
-              font-weight: 800;
-              letter-spacing: -0.04em;
-              margin: 0 0 10px 0;
-              text-transform: uppercase;
-              color: #020617;
-            }
-            .title-sub {
-              font-size: 14px;
-              font-weight: 700;
-              color: #4f46e5;
-              letter-spacing: 0.25em;
-              text-transform: uppercase;
-              margin: 0 0 40px 0;
-            }
-            .qr-wrapper {
-              display: inline-flex;
-              justify-content: center;
-              align-items: center;
-              padding: 24px;
-              border: 3px solid #e2e8f0;
-              border-radius: 32px;
-              background: #ffffff;
-              margin: 0 auto;
-            }
-            .qr-wrapper svg {
-              width: 280px;
-              height: 280px;
-            }
-            .instructions {
-              margin-top: 40px;
-              border-top: 2px solid #f1f5f9;
-              padding-top: 30px;
-            }
-            .instructions-title {
-              font-size: 18px;
-              font-weight: 850;
-              text-transform: uppercase;
-              margin: 0 0 12px 0;
-              color: #0f172a;
-              letter-spacing: -0.02em;
-            }
-            .instructions-text {
-              font-size: 13px;
-              color: #475569;
-              line-height: 1.6;
-              max-width: 440px;
-              margin: 0 auto;
-              font-weight: 500;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="poster-card">
-            <div class="logo-container">
-              <img class="logo-img" src="${logoUrl}" alt="Logo OSWT" onerror="this.style.display='none'" />
-            </div>
-            <h1 class="title-main">Orquesta Sinfónica William Taylor</h1>
-            <div class="title-sub">Salida y Retorno de Instrumentos</div>
-            
-            <div class="qr-wrapper">
-              ${svgHtml}
-            </div>
-            
-            <div class="instructions">
-              <h3 class="instructions-title">Escanea con tu Celular para Registrar</h3>
-              <p class="instructions-text">
-                Apunta con la cámara de tu smartphone a este código QR para abrir el formulario del inventario oficial. Registra la salida cuando retires tu instrumento y el retorno cuando lo devuelvas a la sala.
-              </p>
-            </div>
-          </div>
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-                window.close();
-              }, 300);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    window.print();
   };
 
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-slate-900/40 border border-slate-800 p-10 sm:p-16 rounded-[4rem] shadow-2xl backdrop-blur-xl print:bg-white print:border-none print:shadow-none print:p-0">
+      {/* Estilos CSS específicos de impresión para ocultar la barra lateral, cabecera y maquetar el póster */}
+      <style>{`
+        @media print {
+          /* Ocultar barra lateral (aside), encabezado (header) y la interfaz interactiva */
+          aside,
+          header,
+          .print-hidden,
+          .print\\:hidden,
+          button,
+          .no-print {
+            display: none !important;
+          }
+          
+          /* Forzar fondo blanco y eliminar márgenes del sistema de la app */
+          body, html, #root, .min-h-screen, main {
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            color: #020617 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            height: auto !important;
+            width: 100% !important;
+          }
+
+          /* Formato de cartel A4 para el QR */
+          .access-print-poster {
+            display: block !important;
+            margin: 2cm auto !important;
+            padding: 50px !important;
+            border: 8px double #4f46e5 !important;
+            border-radius: 32px !important;
+            text-align: center !important;
+            max-width: 600px !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            page-break-inside: avoid !important;
+          }
+          
+          .access-print-poster .logo-container {
+            margin-bottom: 24px !important;
+            display: block !important;
+          }
+          
+          .access-print-poster .logo-img {
+            height: 90px !important;
+            width: auto !important;
+            margin: 0 auto !important;
+            display: block !important;
+          }
+          
+          .access-print-poster h1 {
+            font-size: 28px !important;
+            font-weight: 800 !important;
+            margin: 0 0 10px 0 !important;
+            text-transform: uppercase !important;
+            color: #020617 !important;
+            letter-spacing: -0.04em !important;
+          }
+          
+          .access-print-poster .subtitle {
+            font-size: 13px !important;
+            font-weight: 750 !important;
+            color: #4f46e5 !important;
+            letter-spacing: 0.25em !important;
+            text-transform: uppercase !important;
+            margin: 0 0 35px 0 !important;
+          }
+          
+          .access-print-poster .qr-container {
+            display: inline-flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 24px !important;
+            border: 3px solid #cbd5e1 !important;
+            border-radius: 28px !important;
+            background: #ffffff !important;
+            margin: 0 auto !important;
+          }
+          
+          .access-print-poster .qr-container svg {
+            width: 280px !important;
+            height: 280px !important;
+          }
+          
+          .access-print-poster .instructions {
+            margin-top: 36px !important;
+            border-top: 2px solid #f1f5f9 !important;
+            padding-top: 24px !important;
+          }
+          
+          .access-print-poster .instructions h3 {
+            font-size: 17px !important;
+            font-weight: 850 !important;
+            text-transform: uppercase !important;
+            margin: 0 0 10px 0 !important;
+            color: #0f172a !important;
+          }
+          
+          .access-print-poster .instructions p {
+            font-size: 11px !important;
+            color: #475569 !important;
+            line-height: 1.6 !important;
+            max-width: 440px !important;
+            margin: 0 auto !important;
+            font-weight: 500 !important;
+          }
+        }
+      `}</style>
+
+      {/* Vista para pantalla interactiva */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-slate-900/40 border border-slate-800 p-10 sm:p-16 rounded-[4rem] shadow-2xl backdrop-blur-xl print:hidden">
 
         {/* Contenedor del QR */}
         <div className="flex flex-col items-center text-center space-y-8">
           <div className="relative group">
-            <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full group-hover:bg-indigo-500/30 transition-all print:hidden" />
+            <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full group-hover:bg-indigo-500/30 transition-all" />
             <div className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl border-4 border-indigo-500/20 overflow-hidden flex items-center justify-center">
               <QRCodeSVG
-                id="student-access-qr"
                 value={studentUrl}
                 size={320}
                 level="H"
@@ -177,7 +157,7 @@ const QRAccessView: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-4 print:hidden w-full max-w-xs">
+          <div className="space-y-4 w-full max-w-xs">
             {isLocalhost && (
               <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl text-left">
                 <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -210,7 +190,7 @@ const QRAccessView: React.FC = () => {
         </div>
 
         {/* Instrucciones y Detalles */}
-        <div className="space-y-10 print:hidden">
+        <div className="space-y-10">
           <div>
             <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-4 leading-none">
               ACCESO <br /> <span className="text-indigo-500">AUTOGESTIÓN</span>
@@ -265,6 +245,39 @@ const QRAccessView: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Cartel exclusivo para impresión (oculto en pantalla, visible al imprimir) */}
+      <div className="hidden access-print-poster">
+        <div className="logo-container">
+          <img className="logo-img" src="/logo_orquesta_sinfonica_wt.png" alt="Logo OSWT" onerror="this.style.display='none'" />
+        </div>
+        <h1>Orquesta Sinfónica William Taylor</h1>
+        <div className="subtitle">Salida y Retorno de Instrumentos</div>
+        
+        <div className="qr-container">
+          <QRCodeSVG
+            value={studentUrl}
+            size={280}
+            level="H"
+            includeMargin={false}
+            imageSettings={{
+              src: "/logo_orquesta_sinfonica_wt.png",
+              x: undefined,
+              y: undefined,
+              height: 50,
+              width: 50,
+              excavate: true,
+            }}
+          />
+        </div>
+        
+        <div className="instructions">
+          <h3>Escanea con tu Celular para Registrar</h3>
+          <p>
+            Apunta con la cámara de tu smartphone a este código QR para abrir el formulario del inventario oficial. Registra la salida cuando retires tu instrumento y el retorno cuando lo devuelvas a la sala.
+          </p>
+        </div>
       </div>
     </div>
   );
