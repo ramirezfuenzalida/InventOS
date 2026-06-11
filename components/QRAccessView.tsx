@@ -19,10 +19,10 @@ const QRAccessView: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
-      {/* Estilos CSS específicos de impresión para ocultar la barra lateral, cabecera y maquetar el póster */}
+      {/* Estilos CSS específicos de impresión para replicar la identidad visual exacta de la app */}
       <style>{`
         @media print {
-          /* Ocultar barra lateral (aside), encabezado (header) y la interfaz interactiva */
+          /* Ocultar elementos de la app que no pertenecen al cartel */
           aside,
           header,
           .print-hidden,
@@ -32,7 +32,7 @@ const QRAccessView: React.FC = () => {
             display: none !important;
           }
           
-          /* Forzar fondo blanco y eliminar márgenes del sistema de la app */
+          /* Fondo blanco de página y dimensiones limpias */
           body, html, #root, .min-h-screen, main {
             background-color: #ffffff !important;
             background: #ffffff !important;
@@ -44,87 +44,133 @@ const QRAccessView: React.FC = () => {
             width: 100% !important;
           }
 
-          /* Formato de cartel A4 para el QR */
+          /* Contenedor del Cartel (Replica la tarjeta oscura de la app) */
           .access-print-poster {
-            display: block !important;
-            margin: 2cm auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 1.5cm auto !important;
             padding: 50px !important;
-            border: 8px double #4f46e5 !important;
-            border-radius: 32px !important;
+            background-color: #020617 !important; /* Fondo oscuro exacto de la app */
+            color: #f1f5f9 !important;
+            border: 4px solid rgba(99, 102, 241, 0.3) !important;
+            border-radius: 40px !important;
             text-align: center !important;
-            max-width: 600px !important;
+            max-width: 580px !important;
             box-sizing: border-box !important;
-            background: #ffffff !important;
             page-break-inside: avoid !important;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3) !important;
           }
           
-          .access-print-poster .logo-container {
-            margin-bottom: 24px !important;
-            display: block !important;
+          /* Replicar marca e identidad (Logo sidebar) */
+          .access-print-poster .logo-section {
+            display: flex !important;
+            align-items: center !important;
+            gap: 16px !important;
+            margin-bottom: 40px !important;
+          }
+          
+          .access-print-poster .logo-box {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            padding: 4px !important;
+            border-radius: 12px !important;
+            width: 48px !important;
+            height: 48px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
           }
           
           .access-print-poster .logo-img {
-            height: 90px !important;
-            width: auto !important;
-            margin: 0 auto !important;
-            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
           }
-          
-          .access-print-poster h1 {
-            font-size: 28px !important;
-            font-weight: 800 !important;
-            margin: 0 0 10px 0 !important;
+
+          .access-print-poster .logo-text-container {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+
+          .access-print-poster .logo-title {
+            font-size: 24px !important;
+            font-weight: 950 !important;
+            font-style: italic !important;
+            letter-spacing: -0.05em !important;
+            color: #ffffff !important;
+            margin: 0 !important;
+            line-height: 1 !important;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+          }
+
+          .access-print-poster .logo-title .highlight {
+            color: #6366f1 !important; /* Indigo */
+            font-style: normal !important;
+          }
+
+          .access-print-poster .logo-subtitle {
+            font-size: 7px !important;
+            font-weight: 850 !important;
             text-transform: uppercase !important;
-            color: #020617 !important;
-            letter-spacing: -0.04em !important;
+            letter-spacing: 0.18em !important;
+            color: #64748b !important;
+            margin: 4px 0 0 0 !important;
           }
-          
-          .access-print-poster .subtitle {
-            font-size: 13px !important;
-            font-weight: 750 !important;
-            color: #4f46e5 !important;
-            letter-spacing: 0.25em !important;
-            text-transform: uppercase !important;
-            margin: 0 0 35px 0 !important;
-          }
-          
-          .access-print-poster .qr-container {
-            display: inline-flex !important;
+
+          /* Contenedor del QR (Idéntico al de pantalla) */
+          .access-print-poster .qr-card-container {
+            background: #ffffff !important;
+            padding: 32px !important;
+            border-radius: 36px !important;
+            border: 4px solid rgba(99, 102, 241, 0.1) !important;
+            display: flex !important;
+            flex-direction: column !important;
             justify-content: center !important;
             align-items: center !important;
-            padding: 24px !important;
-            border: 3px solid #cbd5e1 !important;
-            border-radius: 28px !important;
-            background: #ffffff !important;
             margin: 0 auto !important;
           }
-          
-          .access-print-poster .qr-container svg {
+
+          .access-print-poster .qr-card-container svg {
             width: 280px !important;
             height: 280px !important;
           }
-          
-          .access-print-poster .instructions {
-            margin-top: 36px !important;
-            border-top: 2px solid #f1f5f9 !important;
-            padding-top: 24px !important;
-          }
-          
-          .access-print-poster .instructions h3 {
-            font-size: 17px !important;
-            font-weight: 850 !important;
-            text-transform: uppercase !important;
-            margin: 0 0 10px 0 !important;
-            color: #0f172a !important;
-          }
-          
-          .access-print-poster .instructions p {
-            font-size: 11px !important;
+
+          .access-print-poster .qr-footer-text {
+            font-size: 9px !important;
+            font-weight: 900 !important;
             color: #475569 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.15em !important;
+            margin-top: 16px !important;
+            display: block !important;
+          }
+
+          /* Sección de Instrucciones */
+          .access-print-poster .instructions-section {
+            margin-top: 40px !important;
+            border-top: 1px solid rgba(255,255,255,0.08) !important;
+            padding-top: 30px !important;
+            width: 100% !important;
+          }
+
+          .access-print-poster .instructions-title {
+            font-size: 16px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            color: #ffffff !important;
+            margin: 0 0 12px 0 !important;
+          }
+
+          .access-print-poster .instructions-desc {
+            font-size: 11px !important;
+            color: #94a3b8 !important;
             line-height: 1.6 !important;
             max-width: 440px !important;
             margin: 0 auto !important;
-            font-weight: 500 !important;
           }
         }
       `}</style>
@@ -248,14 +294,19 @@ const QRAccessView: React.FC = () => {
       </div>
 
       {/* Cartel exclusivo para impresión (oculto en pantalla, visible al imprimir) */}
+      {/* Mantiene la misma imagen e identidad de marca (logo de barra lateral, colores oscuros, tarjeta QR blanca) */}
       <div className="hidden access-print-poster">
-        <div className="logo-container">
-          <img className="logo-img" src="/logo_orquesta_sinfonica_wt.png" alt="Logo OSWT" onerror="this.style.display='none'" />
+        <div className="logo-section">
+          <div className="logo-box">
+            <img className="logo-img" src="/logo_orquesta_sinfonica_wt.png" alt="Logo OSWT" />
+          </div>
+          <div className="logo-text-container">
+            <h2 className="logo-title">OSWT<span className="highlight">APP</span></h2>
+            <span className="logo-subtitle">Orquesta Sinfónica William Taylor</span>
+          </div>
         </div>
-        <h1>Orquesta Sinfónica William Taylor</h1>
-        <div className="subtitle">Salida y Retorno de Instrumentos</div>
         
-        <div className="qr-container">
+        <div className="qr-card-container">
           <QRCodeSVG
             value={studentUrl}
             size={280}
@@ -270,12 +321,13 @@ const QRAccessView: React.FC = () => {
               excavate: true,
             }}
           />
+          <span className="qr-footer-text">Escanea para Registrar</span>
         </div>
         
-        <div className="instructions">
-          <h3>Escanea con tu Celular para Registrar</h3>
-          <p>
-            Apunta con la cámara de tu smartphone a este código QR para abrir el formulario del inventario oficial. Registra la salida cuando retires tu instrumento y el retorno cuando lo devuelvas a la sala.
+        <div className="instructions-section">
+          <h3 className="instructions-title">Control de Salida y Retorno</h3>
+          <p className="instructions-desc">
+            Apunta con la cámara de tu celular a este código QR para registrar el retiro de tu instrumento (Salida) o su devolución a la sala (Retorno).
           </p>
         </div>
       </div>
