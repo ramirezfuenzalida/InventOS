@@ -16,7 +16,135 @@ const QRAccessView: React.FC = () => {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   const handlePrint = () => {
-    window.print();
+    const qrSvg = document.getElementById('student-access-qr');
+    if (!qrSvg) return;
+
+    const svgHtml = qrSvg.outerHTML;
+    const logoUrl = window.location.origin + "/logo_orquesta_sinfonica_wt.png";
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cartel de Acceso - OSWT</title>
+          <style>
+            @media print {
+              body { margin: 0; }
+              @page { size: portrait; margin: 1.5cm; }
+            }
+            body {
+              font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              background-color: #ffffff;
+              color: #020617;
+              margin: 0;
+              padding: 0;
+            }
+            .poster-card {
+              width: 100%;
+              max-width: 650px;
+              padding: 50px;
+              border: 8px double #4f46e5;
+              border-radius: 40px;
+              text-align: center;
+              box-sizing: border-box;
+            }
+            .logo-container {
+              margin-bottom: 24px;
+            }
+            .logo-img {
+              height: 90px;
+              width: auto;
+            }
+            .title-main {
+              font-size: 30px;
+              font-weight: 800;
+              letter-spacing: -0.04em;
+              margin: 0 0 10px 0;
+              text-transform: uppercase;
+              color: #020617;
+            }
+            .title-sub {
+              font-size: 14px;
+              font-weight: 700;
+              color: #4f46e5;
+              letter-spacing: 0.25em;
+              text-transform: uppercase;
+              margin: 0 0 40px 0;
+            }
+            .qr-wrapper {
+              display: inline-flex;
+              justify-content: center;
+              align-items: center;
+              padding: 24px;
+              border: 3px solid #e2e8f0;
+              border-radius: 32px;
+              background: #ffffff;
+              margin: 0 auto;
+            }
+            .qr-wrapper svg {
+              width: 280px;
+              height: 280px;
+            }
+            .instructions {
+              margin-top: 40px;
+              border-top: 2px solid #f1f5f9;
+              padding-top: 30px;
+            }
+            .instructions-title {
+              font-size: 18px;
+              font-weight: 850;
+              text-transform: uppercase;
+              margin: 0 0 12px 0;
+              color: #0f172a;
+              letter-spacing: -0.02em;
+            }
+            .instructions-text {
+              font-size: 13px;
+              color: #475569;
+              line-height: 1.6;
+              max-width: 440px;
+              margin: 0 auto;
+              font-weight: 500;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="poster-card">
+            <div class="logo-container">
+              <img class="logo-img" src="${logoUrl}" alt="Logo OSWT" onerror="this.style.display='none'" />
+            </div>
+            <h1 class="title-main">Orquesta Sinfónica William Taylor</h1>
+            <div class="title-sub">Salida y Retorno de Instrumentos</div>
+            
+            <div class="qr-wrapper">
+              ${svgHtml}
+            </div>
+            
+            <div class="instructions">
+              <h3 class="instructions-title">Escanea con tu Celular para Registrar</h3>
+              <p class="instructions-text">
+                Apunta con la cámara de tu smartphone a este código QR para abrir el formulario del inventario oficial. Registra la salida cuando retires tu instrumento y el retorno cuando lo devuelvas a la sala.
+              </p>
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 300);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (
@@ -29,6 +157,7 @@ const QRAccessView: React.FC = () => {
             <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full group-hover:bg-indigo-500/30 transition-all print:hidden" />
             <div className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl border-4 border-indigo-500/20 overflow-hidden flex items-center justify-center">
               <QRCodeSVG
+                id="student-access-qr"
                 value={studentUrl}
                 size={320}
                 level="H"
@@ -136,14 +265,6 @@ const QRAccessView: React.FC = () => {
           </div>
         </div>
 
-        {/* Elemento solo para impresión */}
-        <div className="hidden print:block absolute top-0 left-0 w-full text-center">
-          <h1 className="text-4xl font-black mb-4">ORQUESTA WT</h1>
-          <p className="text-xl font-bold mb-12 uppercase tracking-widest">Registro de Instrumentos</p>
-          <div className="border-t-2 border-black pt-8">
-            <p className="text-sm font-medium">Escanea con tu celular para registrar salida o retorno</p>
-          </div>
-        </div>
       </div>
     </div>
   );
