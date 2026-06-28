@@ -65,8 +65,8 @@ export const useInventoryData = () => {
       isDeletingRef.current = true;
       await syncExcelData(mappedData, setProcessingMessage, students);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventoryData'] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['inventoryData'], type: 'active' });
       alert("Inventario actualizado exitosamente.");
     },
     onSettled: () => {
