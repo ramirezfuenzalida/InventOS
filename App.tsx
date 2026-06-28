@@ -166,6 +166,13 @@ const App: React.FC = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    // Evita que datos de inventario/estudiantes queden accesibles en el navegador
+    // (localStorage) después de cerrar sesión, ej. en un equipo compartido.
+    try {
+      localStorage.removeItem('oswt_offline_cache');
+    } catch (e) {
+      console.warn('No se pudo limpiar el caché offline al cerrar sesión:', e);
+    }
     setViewMode('landing');
   };
 

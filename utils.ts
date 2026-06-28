@@ -1,5 +1,18 @@
 import { InventoryItem } from './types.ts';
 
+// Escapa texto antes de insertarlo en HTML construido a mano (document.write, etc.)
+// para evitar XSS con datos que vienen de fuentes no confiables (ej. nombre de estudiante
+// ingresado vía el flujo de checkout QR, que no requiere login).
+export const escapeHtml = (val: unknown): string => {
+    if (val === null || val === undefined) return "";
+    return String(val)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+};
+
 export const globalNormalize = (val: unknown): string => {
     if (val === null || val === undefined) return "";
     return String(val)

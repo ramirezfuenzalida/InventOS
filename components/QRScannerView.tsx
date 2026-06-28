@@ -5,7 +5,7 @@ import QRCodeLib from 'qrcode';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { InventoryItem } from '../types.ts';
-import { globalNormalize, getEstadoCategoria, isItemLoaned } from '../utils.ts';
+import { globalNormalize, getEstadoCategoria, isItemLoaned, escapeHtml } from '../utils.ts';
 import { supabase } from '../supabaseClient.ts';
 
 /** Reproduce un sonido de beep usando Web Audio API */
@@ -484,11 +484,11 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
         <div style="display:inline-block;width:180px;padding:8px;margin:4px;border:1px solid #ccc;text-align:center;page-break-inside:avoid;font-family:system-ui">
           ${qrSrc ? `<img src="${qrSrc}" style="width:120px;height:120px" />` : '<div style="width:120px;height:120px;background:#eee;margin:0 auto"></div>'}
           <div style="font-size:9px;font-weight:900;text-transform:uppercase;margin-top:4px;line-height:1.2">
-            ${item.Instrumento || 'S/N'}
+            ${escapeHtml(item.Instrumento) || 'S/N'}
           </div>
-          <div style="font-size:7px;color:#666;text-transform:uppercase">${item.Marca || ''} ${item.Modelo || ''}</div>
-          <div style="font-size:7px;color:#999;margin-bottom:2px;">S/N: ${item.Serie || '—'}</div>
-          ${item.Estudiante ? `<div style="font-size:8px;color:#1e40af;font-weight:900;text-transform:uppercase;background:#e0e7ff;padding:2px;border-radius:4px;">👤 ${item.Estudiante}</div>` : ''}
+          <div style="font-size:7px;color:#666;text-transform:uppercase">${escapeHtml(item.Marca)} ${escapeHtml(item.Modelo)}</div>
+          <div style="font-size:7px;color:#999;margin-bottom:2px;">S/N: ${escapeHtml(item.Serie) || '—'}</div>
+          ${item.Estudiante ? `<div style="font-size:8px;color:#1e40af;font-weight:900;text-transform:uppercase;background:#e0e7ff;padding:2px;border-radius:4px;">👤 ${escapeHtml(item.Estudiante)}</div>` : ''}
         </div>
       `;
     }).join('');

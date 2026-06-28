@@ -276,6 +276,7 @@ const QRAccessView: React.FC = () => {
                 <a
                   href={studentUrl}
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="text-[11px] text-indigo-400 font-black flex items-center gap-1 hover:underline"
                 >
                   Abrir link en nueva pestaña <ExternalLink className="w-3 h-3" />

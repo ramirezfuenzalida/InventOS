@@ -9,15 +9,33 @@
 
   <!-- Diagnostic Global Error Handler (Captura errores antes y durante el arranque) -->
   <script>
+    // Construye el bloque de error usando createElement/textContent (no innerHTML) para
+    // que un mensaje de error con HTML/script embebido no pueda ejecutarse en la página.
+    function renderErrorBox(statusText, titleText, messageText, originText) {
+      statusText.textContent = '';
+      var span = document.createElement('span');
+      span.style.cssText = 'color: #f87171; font-weight: bold; font-family: system-ui, sans-serif; display: block; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); margin-top: 15px; text-transform: none; text-align: left; font-size: 13px;';
+      span.appendChild(document.createTextNode(titleText));
+      span.appendChild(document.createElement('br'));
+      var strong = document.createElement('strong');
+      strong.style.color = '#ef4444';
+      strong.textContent = messageText;
+      span.appendChild(strong);
+      if (originText) {
+        span.appendChild(document.createElement('br'));
+        var small = document.createElement('small');
+        small.style.cssText = 'color: #94a3b8; font-family: monospace; display: block; margin-top: 6px;';
+        small.textContent = originText;
+        span.appendChild(small);
+      }
+      statusText.appendChild(span);
+    }
+
     window.addEventListener('error', function(event) {
       var statusText = document.getElementById('status-text');
       if (statusText) {
-        statusText.innerHTML = '<span style="color: #f87171; font-weight: bold; font-family: system-ui, sans-serif; display: block; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); margin-top: 15px; text-transform: none; text-align: left; font-size: 13px;">' +
-          '⚠️ ERROR DE CARGA:<br>' + 
-          '<strong style="color: #ef4444;">' + (event.message || 'Error de script desconocido') + '</strong><br>' +
-          '<small style="color: #94a3b8; font-family: monospace; display: block; margin-top: 6px;">Origen: ' + 
-          (event.filename ? event.filename.split('/').pop() : 'inline-script') + ':' + (event.lineno || '') + ':' + (event.colno || '') + '</small>' +
-          '</span>';
+        var origin = 'Origen: ' + (event.filename ? event.filename.split('/').pop() : 'inline-script') + ':' + (event.lineno || '') + ':' + (event.colno || '');
+        renderErrorBox(statusText, '⚠️ ERROR DE CARGA:', event.message || 'Error de script desconocido', origin);
       }
       console.error("Global Catch Error:", event.error || event.message);
     });
@@ -29,10 +47,7 @@
         if (event.reason) {
           reasonText = event.reason.message || event.reason.details || String(event.reason);
         }
-        statusText.innerHTML = '<span style="color: #f87171; font-weight: bold; font-family: system-ui, sans-serif; display: block; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); margin-top: 15px; text-transform: none; text-align: left; font-size: 13px;">' +
-          '⚠️ ERROR DE PROMESA:<br>' + 
-          '<strong style="color: #ef4444;">' + reasonText + '</strong>' +
-          '</span>';
+        renderErrorBox(statusText, '⚠️ ERROR DE PROMESA:', reasonText, null);
       }
       console.error("Global Catch Rejection:", event.reason);
     });
