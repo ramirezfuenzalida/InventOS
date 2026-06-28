@@ -3,6 +3,18 @@ import { globalNormalize, findOfficialStudentName } from '../utils.ts';
 import { inventoryItemSchema } from '../schemas/inventory.schema.ts';
 import { studentSchema } from '../schemas/student.schema.ts';
 
+export const normalizeCourse = (val: unknown): string => {
+  if (val === null || val === undefined) return "SIN CURSO";
+  const s = String(val)
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return s || "SIN CURSO";
+};
+
 export interface ExcelParseResult {
   success: boolean;
   data?: InventoryItem[];
@@ -51,7 +63,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             const standardFields: Record<string, string[]> = {
               rut: ['rut', 'id', 'identificacion', 'cedula', 'run'],
               name: ['nombre_completo', 'nombre completo', 'nombre', 'name', 'estudiante', 'alumno'],
-              course: ['curso', 'grade', 'course', 'ano', 'año'],
+              course: ['curso', 'grade', 'course', 'ano', 'año', 'grado', 'nivel', 'estamento', 'nivel_escolar', 'aula', 'division', 'división', 'itinerario', 'nivel academico', 'nivel académico', 'escolaridad', 'curso / grado'],
               instrument: ['instrumento', 'instrument', 'item'],
               phone: ['telefono_estudiante', 'telefono estudiante', 'telefono', 'teléfono', 'phone', 'celular', 'contacto'],
               email: ['email_estudiante', 'email estudiante', 'email', 'correo', 'mail', 'correo estudiante', 'correo_estudiante'],
@@ -59,13 +71,32 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
               parent_phone: ['telefono_apoderado', 'telefono apoderado', 'contacto apoderado', 'celular apoderado', 'phone_apoderado', 'phone apoderado']
             };
 
+            let extractedCurso = '';
+            let extractedSeccion = '';
+
             const rowKeys = Object.keys(row);
             rowKeys.forEach(key => {
               const normKey = globalNormalize(key).replace(/\s+/g, '');
+
+              // Detectar Curso
+              const coursePatterns = ['curso', 'grade', 'course', 'ano', 'año', 'grado', 'nivel', 'estamento', 'nivel_escolar', 'aula', 'division', 'división', 'itinerario', 'nivel academico', 'nivel académico', 'escolaridad', 'curso / grado'];
+              if (coursePatterns.some(p => globalNormalize(p).replace(/\s+/g, '') === normKey)) {
+                if (!extractedCurso) {
+                  extractedCurso = String(row[key] || '').trim();
+                }
+              }
+
+              // Detectar Sección
+              const seccionPatterns = ['seccion', 'sección', 'grupo', 'paralelo', 'letra'];
+              if (seccionPatterns.some(p => globalNormalize(p).replace(/\s+/g, '') === normKey)) {
+                if (!extractedSeccion) {
+                  extractedSeccion = String(row[key] || '').trim();
+                }
+              }
+
               for (const [field, patterns] of Object.entries(standardFields)) {
+                if (field === 'course') continue;
                 if (patterns.some(p => globalNormalize(p).replace(/\s+/g, '') === normKey)) {
-                  // No sobrescribir un campo ya asignado por otra columna (evita que dos
-                  // encabezados distintos que comparten un sinónimo se pisen entre sí).
                   if (!mapped[field]) {
                     mapped[field] = String(row[key]);
                   }
@@ -74,8 +105,19 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
               }
             });
 
+            // Combinar Curso y Sección inteligentemente
+            let combinedCourse = 'SIN CURSO';
+            if (extractedCurso) {
+              if (extractedSeccion && !extractedCurso.toUpperCase().includes(extractedSeccion.toUpperCase())) {
+                combinedCourse = `${extractedCurso} ${extractedSeccion}`;
+              } else {
+                combinedCourse = extractedCurso;
+              }
+            }
+            mapped.course = combinedCourse;
+
             const name = String(mapped.name || '').replace(/_/g, ' ').toUpperCase().trim();
-            const course = String(mapped.course || 'SIN CURSO').toUpperCase().trim();
+            const course = normalizeCourse(mapped.course);
             const instrument = mapped.instrument || null;
             const phone = mapped.phone || null;
             const email = mapped.email || null;
@@ -115,7 +157,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
 
           const standardFields: Record<string, string[]> = {
             Instrumento: ['instrumento', 'item', 'descripcion del instrumento', 'nombre del instrumento', 'instrumentos oswt'],
-            Familia: ['familia', 'seccion', 'categoria', 'grupo', 'familia de instrumento', 'tipo', 'tipo de instrumento'],
+            Familia: ['familia', 'categoria', 'familia de instrumento'],
             Marca: ['marca', 'brand', 'fabricante'],
             Estado: ['estado', 'condicion', 'status'],
             Modelo: ['modelo', 'model'],
@@ -128,7 +170,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             Limpio: ['limpio', 'instrumento limpio'],
             Responsable: ['monitor', 'responsable', 'monitor responsable'],
             Estudiante: ['estudiante', 'alumno', 'nombre del alumno', 'nombre', 'responsable del instrumento', 'estudiante que lo utiliza'],
-            Curso: ['curso', 'grado', 'nivel', 'clase', 'ano', 'año', 'periodo', 'seccion', 'sección', 'grupo', 'estamento', 'nivel_escolar', 'aula', 'division', 'división', 'itinerario', 'paralelo', 'nivel academico', 'nivel académico', 'escolaridad', 'curso / grado'],
+            Curso: ['curso', 'grado', 'nivel', 'clase', 'ano', 'año', 'periodo', 'estamento', 'nivel_escolar', 'aula', 'division', 'división', 'itinerario', 'nivel academico', 'nivel académico', 'escolaridad', 'curso / grado'],
             Telefono: ['telefono', 'teléfono', 'celular', 'móvil', 'contacto'],
             Email: ['email', 'correo', 'mail', 'correo electrónico'],
             Apoderado: ['apoderado', 'parent', 'tutor', 'nombre apoderado'],
@@ -144,12 +186,33 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
           const metadata: Record<string, string> = {};
           const excelKeys = Object.keys(row);
 
+          let inventoryCurso = '';
+          let inventorySeccion = '';
+
           excelKeys.forEach(excelKey => {
             const normExcelKey = globalNormalize(excelKey);
+
+            // Detectar Curso de Inventario
+            const coursePatterns = ['curso', 'grado', 'nivel', 'clase', 'ano', 'año', 'periodo', 'estamento', 'nivel_escolar', 'aula', 'division', 'división', 'itinerario', 'nivel academico', 'nivel académico', 'escolaridad', 'curso / grado'];
+            if (coursePatterns.some(p => normExcelKey === globalNormalize(p))) {
+              if (!inventoryCurso) {
+                inventoryCurso = String(row[excelKey] || '').trim();
+              }
+            }
+
+            // Detectar Sección de Inventario
+            const seccionPatterns = ['seccion', 'sección', 'grupo', 'paralelo', 'letra'];
+            if (seccionPatterns.some(p => normExcelKey === globalNormalize(p))) {
+              if (!inventorySeccion) {
+                inventorySeccion = String(row[excelKey] || '').trim();
+              }
+            }
+
             let matchedField = "";
 
             // First pass: look for exact matches
             for (const [field, patterns] of Object.entries(standardFields)) {
+              if (field === 'Curso') continue; // Se maneja aparte
               if (patterns.some(p => normExcelKey === globalNormalize(p))) {
                 matchedField = field;
                 break;
@@ -160,7 +223,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             if (!matchedField) {
               // "Instrumento" va antes que "Estudiante" para que encabezados como
               // "nombre_instrumento" no caigan en Estudiante por el sinónimo genérico "nombre".
-              const priorityOrder = ['Familia', 'Medida', 'Medidas', 'Serie', 'Estado', 'Marca', 'Modelo', 'Instrumento', 'Estudiante', 'Curso'];
+              const priorityOrder = ['Familia', 'Medida', 'Medidas', 'Serie', 'Estado', 'Marca', 'Modelo', 'Instrumento', 'Estudiante'];
 
               for (const field of priorityOrder) {
                 const patterns = standardFields[field];
@@ -194,6 +257,17 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             }
           });
 
+          // Combinar Curso y Sección de Inventario
+          let combinedInventoryCourse = 'SIN CURSO';
+          if (inventoryCurso) {
+            if (inventorySeccion && !inventoryCurso.toUpperCase().includes(inventorySeccion.toUpperCase())) {
+              combinedInventoryCourse = `${inventoryCurso} ${inventorySeccion}`;
+            } else {
+              combinedInventoryCourse = inventoryCurso;
+            }
+          }
+          mappedItem.Curso = normalizeCourse(combinedInventoryCourse);
+
           // Unify mappedItem structure with metadata
           const resultRow: Record<string, unknown> = { ...mappedItem };
           
@@ -203,20 +277,23 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             
             const officialStudent = validStudents.find(s => s.name === matchedName);
             if (officialStudent) {
-              // Si el estudiante en el listado oficial no tiene curso asignado (o tiene SIN CURSO),
-              // pero en la hoja de inventario sí viene su curso bajo un encabezado reconocible,
-              // enriquecemos la base de datos de estudiantes.
+              // Si la fila del inventario trae un curso válido (no vacío ni "SIN CURSO"), lo respetamos
+              // y enriquecemos/actualizamos la base de datos de estudiantes oficiales con este curso.
               if (resultRow.Curso && String(resultRow.Curso).trim() !== '' && String(resultRow.Curso).toUpperCase() !== 'SIN CURSO') {
-                if (!officialStudent.course || officialStudent.course === 'SIN CURSO') {
-                  officialStudent.course = String(resultRow.Curso).toUpperCase().trim();
+                officialStudent.course = normalizeCourse(resultRow.Curso);
+              } else {
+                // Si la fila de inventario no trae curso, pero el estudiante oficial sí tiene un curso válido, lo heredamos
+                if (officialStudent.course && officialStudent.course !== 'SIN CURSO') {
+                  resultRow.Curso = normalizeCourse(officialStudent.course);
                 }
               }
-              
-              // Si el estudiante tiene un curso oficial válido asignado, lo respetamos
-              if (officialStudent.course && officialStudent.course !== 'SIN CURSO') {
-                resultRow.Curso = officialStudent.course;
-              }
             }
+          }
+
+          if (resultRow.Curso) {
+            resultRow.Curso = normalizeCourse(resultRow.Curso);
+          } else {
+            resultRow.Curso = 'SIN CURSO';
           }
 
           resultRow.metadata = metadata;
