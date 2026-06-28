@@ -25,21 +25,27 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
         const XLSX = await import('xlsx');
         
         const wb = XLSX.read(bstr, { type: 'binary' });
-        
-        // Find inventory sheet (first sheet)
-        const ws = wb.Sheets[wb.SheetNames[0]];
+
+        // Find students sheet (if any) por nombre, sin asumir posición
+        const studentSheetName = wb.SheetNames.find(name => {
+          const n = globalNormalize(name).replace(/\s+/g, '');
+          return n.includes('estudiante') || n.includes('alumno');
+        });
+
+        // Find inventory sheet por nombre ("Detalle de Articulos" y variantes); si no hay match,
+        // usa la primera hoja que no sea la de estudiantes (fallback retrocompatible).
+        const inventorySheetName = wb.SheetNames.find(name => {
+          const n = globalNormalize(name).replace(/\s+/g, '');
+          return n.includes('articulo') || n.includes('inventario') || n.includes('instrumento');
+        }) || wb.SheetNames.find(name => name !== studentSheetName) || wb.SheetNames[0];
+
+        const ws = wb.Sheets[inventorySheetName];
         const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
         // Obtener cabeceras reales por posición física de columna (A=0, B=1, C=2, D=3) para asegurar mapeo de Curso en Columna D
         const rowsAsArrays = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 });
         const headers = rowsAsArrays.length > 0 ? (rowsAsArrays[0] as string[]) : [];
         const columnDHeader = headers.length > 3 ? String(headers[3]).trim() : '';
-
-        // Find students sheet (if any)
-        const studentSheetName = wb.SheetNames.find(name => {
-          const n = globalNormalize(name).replace(/\s+/g, '');
-          return n === 'listadodeestudiante' || n === 'listadodeestudiantes' || n === 'estudiantes' || n === 'alumnos';
-        });
 
         let parsedStudents: Student[] = [];
         if (studentSheetName) {
@@ -50,7 +56,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             const standardFields: Record<string, string[]> = {
               rut: ['rut', 'id', 'identificacion', 'cedula', 'run'],
               name: ['nombre_completo', 'nombre completo', 'nombre', 'name', 'estudiante', 'alumno'],
-              course: ['curso', 'grade', 'course', 'ano', 'año', 'seccion'],
+              course: ['curso', 'grade', 'course', 'ano', 'año'],
               instrument: ['instrumento', 'instrument', 'item'],
               phone: ['telefono_estudiante', 'telefono estudiante', 'telefono', 'teléfono', 'phone', 'celular', 'contacto'],
               email: ['email_estudiante', 'email estudiante', 'email', 'correo', 'mail', 'correo estudiante', 'correo_estudiante'],
@@ -63,7 +69,11 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
               const normKey = globalNormalize(key).replace(/\s+/g, '');
               for (const [field, patterns] of Object.entries(standardFields)) {
                 if (patterns.some(p => globalNormalize(p).replace(/\s+/g, '') === normKey)) {
-                  mapped[field] = String(row[key]);
+                  // No sobrescribir un campo ya asignado por otra columna (evita que dos
+                  // encabezados distintos que comparten un sinónimo se pisen entre sí).
+                  if (!mapped[field]) {
+                    mapped[field] = String(row[key]);
+                  }
                   break;
                 }
               }
@@ -108,7 +118,9 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
         const mappedData: Record<string, unknown>[] = rawData.map((row, index) => {
           const mappedItem: Record<string, string> = { id: String(index + 1) };
 
-          // Extraer prioritariamente la columna D física (index 3) como Curso
+          // Columna D física (index 3): solo se usa como respaldo si ningún encabezado
+          // coincide con "Curso" por nombre (evita que columnas como "Monitor"/"Tipo" que
+          // casualmente caen en la columna D se confundan con el curso del estudiante).
           let parsedCurso = '';
           if (columnDHeader && row[columnDHeader] !== undefined) {
             parsedCurso = String(row[columnDHeader]);
@@ -117,9 +129,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
           } else if (row['__empty_3'] !== undefined) {
             parsedCurso = String(row['__empty_3']);
           }
-          if (parsedCurso && parsedCurso.trim() !== '') {
-            mappedItem.Curso = parsedCurso.trim();
-          }
+          parsedCurso = parsedCurso.trim();
 
           const standardFields: Record<string, string[]> = {
             Instrumento: ['instrumento', 'item', 'descripcion del instrumento', 'nombre del instrumento', 'instrumentos oswt'],
@@ -197,6 +207,11 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
               metadata[excelKey] = strVal;
             }
           });
+
+          // Respaldo: si ningún encabezado coincidió con "Curso", recién ahí usamos la columna D física.
+          if (!mappedItem.Curso && parsedCurso !== '') {
+            mappedItem.Curso = parsedCurso;
+          }
 
           // Unify mappedItem structure with metadata
           const resultRow: Record<string, unknown> = { ...mappedItem };
