@@ -1,8 +1,8 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Music, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, X, Calendar, AlertCircle, ChevronDown, PenTool, Camera, Loader2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { Search, Music, User, CheckCircle, ArrowRight, LogOut, LogIn, RotateCcw, X, Calendar, AlertCircle, ChevronDown, PenTool, Camera, Loader2, QrCode } from 'lucide-react';
 import { InventoryItem, Student } from '../types.ts';
-import { isItemLoaned, globalNormalize } from '../utils.ts';
+import { isItemLoaned, globalNormalize, parseQRText } from '../utils.ts';
 
 interface StudentCheckOutProps {
   inventory: InventoryItem[];
@@ -29,6 +29,12 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [instrumentSearchTerm, setInstrumentSearchTerm] = useState('');
+
+  // ── Escaneo de QR del instrumento (atajo para no buscar manualmente) ──
+  const [isScanning, setIsScanning] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scannerRef = useRef<any>(null);
 
   // Normalización segura para búsqueda
   const safeNorm = (val: unknown): string => {
@@ -153,6 +159,94 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
     }).slice(0, 20);
   }, [inventory, searchTerm, mode, studentGroups]);
 
+  /** Procesa el texto leído por la cámara (o tipeado a mano) y preselecciona estudiante+instrumento. */
+  const handleQrDetected = (rawText: string) => {
+    const parsed = parseQRText(rawText);
+    const candidateId = parsed?.id ? String(parsed.id) : '';
+    const candidateSerie = safeNorm(parsed?.serie || rawText);
+
+    const item = inventory.find(i => String(i.id) === candidateId)
+      || inventory.find(i => candidateSerie && safeNorm(i.Serie) === candidateSerie);
+
+    if (!item) {
+      alert('No se encontró ese instrumento en el inventario. Intenta buscarlo manualmente.');
+      return;
+    }
+
+    if (mode === 'in' && !isItemLoaned(item)) {
+      alert('Ese instrumento no está actualmente prestado, no se puede procesar un retorno.');
+      return;
+    }
+    if (mode === 'out' && isItemLoaned(item)) {
+      alert('Ese instrumento ya está prestado a otra persona. Si es tuyo, usa la pestaña "Retorno".');
+      return;
+    }
+
+    const rawName = (item.Estudiante || '').toString().trim();
+    if (rawName) {
+      const key = safeNorm(rawName);
+      const matchedGroup = studentGroups.find(g => safeNorm(g.studentName) === key) || {
+        studentName: rawName.toUpperCase(),
+        course: (item.Curso || 'SIN CURSO').toString().toUpperCase().trim(),
+        instruments: [item]
+      };
+      setSelectedStudent(matchedGroup);
+      setSelectedItem(item);
+    } else {
+      // Instrumento sin estudiante asignado todavía: no podemos saltar la identificación.
+      setSelectedStudent(null);
+      setSelectedItem(null);
+      setInstrumentSearchTerm(item.Instrumento || '');
+      alert('Este instrumento aún no tiene un estudiante asignado. Por favor, busca tu nombre primero.');
+    }
+  };
+
+  const startQrScan = useCallback(async () => {
+    setCameraError(null);
+    setIsScanning(true);
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+
+      if (scannerRef.current) {
+        try { await scannerRef.current.stop(); } catch (e) { /* ignorar */ }
+        scannerRef.current = null;
+      }
+
+      const scanner = new Html5Qrcode('student-qr-reader');
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
+        (decodedText: string) => {
+          handleQrDetected(decodedText);
+          scanner.stop().catch(() => {});
+          scannerRef.current = null;
+          setIsScanning(false);
+        },
+        () => {} // sin QR en este frame, ignorar
+      );
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      // Mantenemos isScanning=true para que el mensaje de error quede visible
+      // en la pantalla de escaneo (con el botón de cancelar), en vez de desaparecer.
+      setCameraError(err.message || 'No se pudo acceder a la cámara. Usa la búsqueda manual.');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inventory, mode, studentGroups]);
+
+  const stopQrScan = useCallback(async () => {
+    if (scannerRef.current) {
+      try { await scannerRef.current.stop(); } catch (e) { /* ignorar */ }
+      scannerRef.current = null;
+    }
+    setIsScanning(false);
+  }, []);
+
+  useEffect(() => {
+    return () => { stopQrScan(); };
+  }, [stopQrScan]);
+
   const handleSelectStudent = (group: StudentGroup) => {
     setSelectedStudent(group);
     setSelectedItem(null);
@@ -200,6 +294,27 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
     setInstrumentSearchTerm('');
   };
 
+  // ── PANTALLA DE ESCANEO QR ──
+  if (isScanning) {
+    return (
+      <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 p-6 md:p-10 rounded-[3rem] text-center shadow-2xl animate-in zoom-in duration-300 space-y-6">
+        <h2 className="text-xl font-black text-white uppercase italic tracking-tighter">Escanea el QR del instrumento</h2>
+        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Apunta la cámara a la etiqueta pegada en el instrumento</p>
+        <div id="student-qr-reader" className="rounded-[2rem] overflow-hidden bg-black mx-auto" style={{ minHeight: 250 }} />
+        {cameraError && (
+          <p className="text-amber-400 text-xs font-bold uppercase">{cameraError}</p>
+        )}
+        <button
+          type="button"
+          onClick={stopQrScan}
+          className="w-full bg-slate-800 py-5 rounded-[2rem] font-black text-white flex items-center justify-center gap-3 uppercase tracking-widest text-xs hover:bg-slate-700 transition-all"
+        >
+          <X className="w-5 h-5" /> Cancelar y buscar manualmente
+        </button>
+      </div>
+    );
+  }
+
   // ── PANTALLA DE ÉXITO ──
   if (isSubmitted) {
     return (
@@ -246,6 +361,20 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
           {/* ── PASO 1: Buscar estudiante ── */}
           {!selectedStudent && !selectedItem && (
             <div className="space-y-8">
+              <button
+                type="button"
+                onClick={startQrScan}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 py-6 rounded-[2.5rem] font-black text-white flex items-center justify-center gap-3 uppercase tracking-widest text-xs transition-all shadow-xl shadow-indigo-600/20"
+              >
+                <QrCode className="w-5 h-5" /> Escanear QR del instrumento
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-slate-800" />
+                <span className="text-slate-700 text-[9px] font-black uppercase tracking-widest">o busca a mano</span>
+                <div className="flex-1 h-px bg-slate-800" />
+              </div>
+
               <div className="relative group">
                 <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-8 h-8 text-slate-700 group-focus-within:text-indigo-500 transition-colors" />
                 <input
@@ -254,7 +383,6 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
                   placeholder="Ingresa nombre o apellido..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  autoFocus
                 />
               </div>
 

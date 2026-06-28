@@ -5,7 +5,7 @@ import QRCodeLib from 'qrcode';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { InventoryItem } from '../types.ts';
-import { globalNormalize, getEstadoCategoria, isItemLoaned, escapeHtml } from '../utils.ts';
+import { globalNormalize, getEstadoCategoria, isItemLoaned, escapeHtml, buildQRText, parseQRText } from '../utils.ts';
 import { supabase } from '../supabaseClient.ts';
 
 /** Reproduce un sonido de beep usando Web Audio API */
@@ -46,22 +46,6 @@ interface QRScannerViewProps {
 }
 
 type ScanTab = 'scanner' | 'generate' | 'control';
-
-/** Genera el texto del QR para un instrumento */
-const buildQRText = (item: InventoryItem): string => {
-  return `OSWT|${item.id}|${item.Serie || 'NS'}|${item.Instrumento}`;
-};
-
-/** Parsea un QR escaneado */
-const parseQRText = (text: string): { id: string; serie: string; instrumento: string } | null => {
-  // Formato: OSWT|id|serie|instrumento
-  const parts = text.split('|');
-  if (parts.length >= 3 && parts[0] === 'OSWT') {
-    return { id: parts[1], serie: parts[2], instrumento: parts[3] || '' };
-  }
-  // Fallback: si no tiene formato OSWT, buscar por texto directo (serie o nombre)
-  return { id: '', serie: text.trim(), instrumento: text.trim() };
-};
 
 const STORAGE_KEY = 'oswt_active_session';
 

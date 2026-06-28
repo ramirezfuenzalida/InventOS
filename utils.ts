@@ -13,6 +13,20 @@ export const escapeHtml = (val: unknown): string => {
         .replace(/'/g, "&#39;");
 };
 
+/** Genera el texto del QR para un instrumento */
+export const buildQRText = (item: InventoryItem): string => {
+    return `OSWT|${item.id}|${item.Serie || 'NS'}|${item.Instrumento}`;
+};
+
+/** Parsea un QR escaneado (formato OSWT|id|serie|instrumento, con fallback a texto plano) */
+export const parseQRText = (text: string): { id: string; serie: string; instrumento: string } | null => {
+    const parts = text.split('|');
+    if (parts.length >= 3 && parts[0] === 'OSWT') {
+        return { id: parts[1], serie: parts[2], instrumento: parts[3] || '' };
+    }
+    return { id: '', serie: text.trim(), instrumento: text.trim() };
+};
+
 export const globalNormalize = (val: unknown): string => {
     if (val === null || val === undefined) return "";
     return String(val)
