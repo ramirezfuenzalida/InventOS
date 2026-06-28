@@ -42,11 +42,6 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
         const ws = wb.Sheets[inventorySheetName];
         const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
-        // Obtener cabeceras reales por posición física de columna (A=0, B=1, C=2, D=3) para asegurar mapeo de Curso en Columna D
-        const rowsAsArrays = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 });
-        const headers = rowsAsArrays.length > 0 ? (rowsAsArrays[0] as string[]) : [];
-        const columnDHeader = headers.length > 3 ? String(headers[3]).trim() : '';
-
         let parsedStudents: Student[] = [];
         if (studentSheetName) {
           const studentWs = wb.Sheets[studentSheetName];
@@ -117,19 +112,6 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
         
         const mappedData: Record<string, unknown>[] = rawData.map((row, index) => {
           const mappedItem: Record<string, string> = { id: String(index + 1) };
-
-          // Columna D física (index 3): solo se usa como respaldo si ningún encabezado
-          // coincide con "Curso" por nombre (evita que columnas como "Monitor"/"Tipo" que
-          // casualmente caen en la columna D se confundan con el curso del estudiante).
-          let parsedCurso = '';
-          if (columnDHeader && row[columnDHeader] !== undefined) {
-            parsedCurso = String(row[columnDHeader]);
-          } else if (row['__EMPTY_3'] !== undefined) {
-            parsedCurso = String(row['__EMPTY_3']);
-          } else if (row['__empty_3'] !== undefined) {
-            parsedCurso = String(row['__empty_3']);
-          }
-          parsedCurso = parsedCurso.trim();
 
           const standardFields: Record<string, string[]> = {
             Instrumento: ['instrumento', 'item', 'descripcion del instrumento', 'nombre del instrumento', 'instrumentos oswt'],
@@ -208,11 +190,6 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             }
           });
 
-          // Respaldo: si ningún encabezado coincidió con "Curso", recién ahí usamos la columna D física.
-          if (!mappedItem.Curso && parsedCurso !== '') {
-            mappedItem.Curso = parsedCurso;
-          }
-
           // Unify mappedItem structure with metadata
           const resultRow: Record<string, unknown> = { ...mappedItem };
           
@@ -222,8 +199,8 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             
             const officialStudent = validStudents.find(s => s.name === matchedName);
             if (officialStudent) {
-              // Si el estudiante en el listado oficial no tiene curso asignado (o tiene SIN CURSO), 
-              // pero en la columna D del listado de instrumentos sí viene su curso, 
+              // Si el estudiante en el listado oficial no tiene curso asignado (o tiene SIN CURSO),
+              // pero en la hoja de inventario sí viene su curso bajo un encabezado reconocible,
               // enriquecemos la base de datos de estudiantes.
               if (resultRow.Curso && String(resultRow.Curso).trim() !== '' && String(resultRow.Curso).toUpperCase() !== 'SIN CURSO') {
                 if (!officialStudent.course || officialStudent.course === 'SIN CURSO') {
