@@ -91,7 +91,7 @@ const App: React.FC = () => {
       
       const backupData = {
         backup_date: new Date().toISOString(),
-        version: "1.2.03 ExeApp",
+        version: "1.2.04 ExeApp",
         inventory: invRes.data || [],
         history: histRes.data || [],
         students: studRes.data || []
