@@ -115,7 +115,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
 
           const standardFields: Record<string, string[]> = {
             Instrumento: ['instrumento', 'item', 'descripcion del instrumento', 'nombre del instrumento', 'instrumentos oswt'],
-            Familia: ['familia', 'seccion', 'categoria', 'grupo', 'familia de instrumento'],
+            Familia: ['familia', 'seccion', 'categoria', 'grupo', 'familia de instrumento', 'tipo', 'tipo de instrumento'],
             Marca: ['marca', 'brand', 'fabricante'],
             Estado: ['estado', 'condicion', 'status'],
             Modelo: ['modelo', 'model'],
@@ -158,18 +158,22 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
 
             // Second pass: look for partial matches
             if (!matchedField) {
-              const priorityOrder = ['Familia', 'Medida', 'Medidas', 'Serie', 'Estado', 'Marca', 'Modelo', 'Estudiante', 'Curso', 'Instrumento'];
+              // "Instrumento" va antes que "Estudiante" para que encabezados como
+              // "nombre_instrumento" no caigan en Estudiante por el sinónimo genérico "nombre".
+              const priorityOrder = ['Familia', 'Medida', 'Medidas', 'Serie', 'Estado', 'Marca', 'Modelo', 'Instrumento', 'Estudiante', 'Curso'];
 
               for (const field of priorityOrder) {
                 const patterns = standardFields[field];
-                if (patterns && patterns.some(p => normExcelKey.includes(globalNormalize(p)))) {
-                  if (field === 'Estudiante' && (normExcelKey.includes('estudiante') || normExcelKey.includes('alumno'))) {
-                    matchedField = 'Estudiante';
-                    break;
-                  }
-                  matchedField = field;
-                  break;
+                if (!patterns || !patterns.some(p => normExcelKey.includes(globalNormalize(p)))) continue;
+
+                // El sinónimo genérico "nombre" de Estudiante solo cuenta si el encabezado
+                // realmente menciona "estudiante" o "alumno"; si no, seguimos buscando.
+                if (field === 'Estudiante' && !(normExcelKey.includes('estudiante') || normExcelKey.includes('alumno'))) {
+                  continue;
                 }
+
+                matchedField = field;
+                break;
               }
             }
 
