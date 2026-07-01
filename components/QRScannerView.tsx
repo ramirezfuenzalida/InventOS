@@ -64,10 +64,16 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   const [scannedIds, setScannedIds] = useState<Set<string>>(new Set());
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  // Modo de escaneo continuo: la cámara no se detiene tras cada QR (ideal para inventariar los 98).
+  const [continuousMode, setContinuousMode] = useState(false);
+  const [liveFeedback, setLiveFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scannerRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Anti-rebote: evita contar el mismo QR muchas veces mientras sigue frente a la cámara.
+  const lastScanRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── SESIONES PERSISTENTES EN SUPABASE ──
   const [sessions, setSessions] = useState<ScanSession[]>([]);
@@ -227,14 +233,37 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
   // ── ESCÁNER con html5-qrcode ──
-  const startScanner = useCallback(async () => {
+  /** Busca un instrumento en el inventario a partir del texto del QR (o serie/nombre manual). */
+  const matchInstrument = useCallback((rawText: string): InventoryItem | null => {
+    const parsed = parseQRText(rawText);
+    if (!parsed) return null;
+    return inventory.find(item => {
+      if (parsed.id && String(item.id) === parsed.id) return true;
+      if (parsed.serie && parsed.serie !== 'NS') {
+        if (globalNormalize(item.Serie) === globalNormalize(parsed.serie)) return true;
+      }
+      if (parsed.instrumento && globalNormalize(item.Instrumento) === globalNormalize(parsed.instrumento)) return true;
+      return false;
+    }) || null;
+  }, [inventory]);
+
+  const showLiveFeedback = (ok: boolean, msg: string) => {
+    setLiveFeedback({ ok, msg });
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = setTimeout(() => setLiveFeedback(null), 1600);
+  };
+
+  const startScanner = useCallback(async (continuous = false) => {
     setCameraError(null);
     setScanResult(null);
+    setLiveFeedback(null);
+    setContinuousMode(continuous);
+    lastScanRef.current = { text: '', time: 0 };
     setIsScanning(true);
 
     try {
       const { Html5Qrcode } = await import('html5-qrcode');
-      
+
       // Limpiar instancia anterior
       if (scannerRef.current) {
         try { await scannerRef.current.stop(); } catch(e) {}
@@ -252,11 +281,31 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
           aspectRatio: 1,
         },
         (decodedText: string) => {
-          // QR detectado
-          handleScanResult(decodedText);
-          scanner.stop().catch(() => {});
-          scannerRef.current = null;
-          setIsScanning(false);
+          if (continuous) {
+            // Modo continuo: seguir escaneando sin detener la cámara.
+            const now = Date.now();
+            // Ignorar el mismo QR si se leyó hace menos de 2.5s (sigue frente a la cámara).
+            if (decodedText === lastScanRef.current.text && now - lastScanRef.current.time < 2500) {
+              return;
+            }
+            lastScanRef.current = { text: decodedText, time: now };
+
+            const item = matchInstrument(decodedText);
+            if (item) {
+              setScannedIds(prev => new Set(prev).add(String(item.id)));
+              playScanSound(true);
+              showLiveFeedback(true, `✓ ${item.Instrumento || 'Instrumento'}${item.Serie ? ` · ${item.Serie}` : ''}`);
+            } else {
+              playScanSound(false);
+              showLiveFeedback(false, 'QR no reconocido');
+            }
+          } else {
+            // Modo individual: escanea uno y detiene para mostrar la ficha.
+            handleScanResult(decodedText);
+            scanner.stop().catch(() => {});
+            scannerRef.current = null;
+            setIsScanning(false);
+          }
         },
         () => {} // error silencioso por cada frame sin QR
       );
@@ -265,7 +314,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
       setCameraError(err.message || 'No se pudo acceder a la cámara');
       setIsScanning(false);
     }
-  }, [inventory]);
+  }, [inventory, matchInstrument]);
 
   const stopScanner = useCallback(async () => {
     if (scannerRef.current) {
@@ -273,31 +322,19 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
       scannerRef.current = null;
     }
     setIsScanning(false);
+    setContinuousMode(false);
+    setLiveFeedback(null);
   }, []);
 
   useEffect(() => {
     return () => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
       stopScanner();
     };
   }, [stopScanner]);
 
   const handleScanResult = (rawText: string) => {
-    const parsed = parseQRText(rawText);
-    if (!parsed) {
-      setScanResult({ found: false, raw: rawText });
-      return;
-    }
-
-    // Buscar en inventario por ID, Serie, o nombre
-    const found = inventory.find(item => {
-      if (parsed.id && String(item.id) === parsed.id) return true;
-      if (parsed.serie && parsed.serie !== 'NS') {
-        if (globalNormalize(item.Serie) === globalNormalize(parsed.serie)) return true;
-      }
-      if (parsed.instrumento && globalNormalize(item.Instrumento) === globalNormalize(parsed.instrumento)) return true;
-      return false;
-    });
-
+    const found = matchInstrument(rawText);
     if (found) {
       setScanResult({ found: true, item: found, raw: rawText });
       setScannedIds(prev => new Set(prev).add(String(found.id)));
@@ -657,15 +694,60 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
               <div id="qr-reader" className="w-full" style={{ minHeight: '260px' }} />
 
               {!isScanning && !scanResult && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
-                  <div className="w-24 h-24 bg-indigo-600/10 rounded-[2rem] flex items-center justify-center border border-indigo-500/20">
-                    <Camera className="w-12 h-12 text-indigo-500" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 sm:gap-5 px-6">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-indigo-600/10 rounded-[2rem] flex items-center justify-center border border-indigo-500/20">
+                    <Camera className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-500" />
                   </div>
                   <button
-                    onClick={startScanner}
-                    className="bg-indigo-600 px-10 py-5 rounded-[2rem] font-black text-sm text-white uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-3"
+                    onClick={() => startScanner(false)}
+                    className="bg-indigo-600 px-8 sm:px-10 py-4 sm:py-5 rounded-[2rem] font-black text-sm text-white uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-3"
                   >
-                    <Scan className="w-5 h-5" /> INICIAR ESCÁNER
+                    <Scan className="w-5 h-5" /> Verificar uno
+                  </button>
+                  <button
+                    onClick={() => startScanner(true)}
+                    className="bg-emerald-600 px-8 sm:px-10 py-4 sm:py-5 rounded-[2rem] font-black text-sm text-white uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/20 flex items-center gap-3"
+                  >
+                    <Package className="w-5 h-5" /> Inventario continuo
+                  </button>
+                  <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] text-center max-w-xs">
+                    Continuo: apunta a cada QR uno tras otro y va contando sin detenerse
+                  </p>
+                </div>
+              )}
+
+              {/* Overlay de escaneo continuo: contador en vivo + feedback + detener */}
+              {isScanning && continuousMode && (
+                <>
+                  <div className="absolute top-0 inset-x-0 p-4 flex items-center justify-between pointer-events-none">
+                    <span className="bg-emerald-600 text-white text-sm font-black px-4 py-2 rounded-full shadow-lg">
+                      {scannedIds.size}/{inventory.length}
+                    </span>
+                    {liveFeedback && (
+                      <span className={`text-white text-[11px] font-black px-4 py-2 rounded-full shadow-lg max-w-[60%] truncate ${liveFeedback.ok ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                        {liveFeedback.msg}
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 inset-x-0 p-4 flex justify-center">
+                    <button
+                      onClick={stopScanner}
+                      className="bg-rose-600 px-8 py-4 rounded-[2rem] font-black text-xs text-white uppercase tracking-widest hover:bg-rose-500 transition-all shadow-xl flex items-center gap-2"
+                    >
+                      <X className="w-4 h-4" /> Detener inventario
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Detener en modo individual (por si la cámara queda abierta) */}
+              {isScanning && !continuousMode && (
+                <div className="absolute bottom-0 inset-x-0 p-4 flex justify-center">
+                  <button
+                    onClick={stopScanner}
+                    className="bg-slate-800/90 px-6 py-3 rounded-[2rem] font-black text-[10px] text-white uppercase tracking-widest hover:bg-slate-700 transition-all shadow-xl flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" /> Cancelar
                   </button>
                 </div>
               )}
@@ -675,7 +757,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                   <AlertTriangle className="w-10 h-10 text-rose-500" />
                   <p className="text-rose-400 text-xs font-bold uppercase text-center px-8">{cameraError}</p>
                   <button
-                    onClick={startScanner}
+                    onClick={() => startScanner(continuousMode)}
                     className="bg-indigo-600 px-8 py-3 rounded-xl font-black text-xs text-white uppercase tracking-widest"
                   >
                     Reintentar
@@ -749,7 +831,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
 
                 <div className="flex gap-4 mt-6">
                   <button
-                    onClick={() => { setScanResult(null); startScanner(); }}
+                    onClick={() => { setScanResult(null); startScanner(false); }}
                     className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
                   >
                     <Scan className="w-4 h-4" /> ESCANEAR OTRO
@@ -829,10 +911,10 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
             {/* Acciones */}
             <div className="flex gap-2 sm:gap-4">
               <button
-                onClick={() => { setActiveTab('scanner'); startScanner(); }}
-                className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                onClick={() => { setActiveTab('scanner'); startScanner(true); }}
+                className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
               >
-                <Scan className="w-4 h-4" /> Escanear
+                <Package className="w-4 h-4" /> Escanear inventario
               </button>
               <button
                 onClick={() => setShowSessionManager(true)}
