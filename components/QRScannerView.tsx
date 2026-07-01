@@ -8,10 +8,28 @@ import { InventoryItem } from '../types.ts';
 import { globalNormalize, getEstadoCategoria, isItemLoaned, escapeHtml, buildQRUrl, parseQRText } from '../utils.ts';
 import { supabase } from '../supabaseClient.ts';
 
+// AudioContext compartido: en móvil el audio queda bloqueado hasta un gesto del
+// usuario, así que reusamos un único contexto y lo reanudamos al tocar "escanear".
+let sharedAudioCtx: AudioContext | null = null;
+const getAudioCtx = (): AudioContext | null => {
+  try {
+    if (!sharedAudioCtx) {
+      sharedAudioCtx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+    }
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+};
+
 /** Reproduce un sonido de beep usando Web Audio API */
 const playScanSound = (success: boolean) => {
   try {
-    const ctx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+    const ctx = getAudioCtx();
+    if (!ctx) return;
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
     oscillator.connect(gain);
@@ -43,7 +61,8 @@ const playScanSound = (success: boolean) => {
 /** Sonido característico de INGRESO confirmado: arpegio ascendente Do-Mi-Sol (inconfundible). */
 const playRegisteredSound = () => {
   try {
-    const ctx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+    const ctx = getAudioCtx();
+    if (!ctx) return;
     const notes = [523.25, 659.25, 783.99]; // Do - Mi - Sol
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -278,6 +297,8 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   };
 
   const startScanner = useCallback(async (continuous = false) => {
+    // Desbloquear el audio dentro del gesto del usuario (necesario en móvil).
+    getAudioCtx();
     setCameraError(null);
     setScanResult(null);
     setLiveFeedback(null);
@@ -740,19 +761,19 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                   </div>
                   <button
                     onClick={() => startScanner(false)}
-                    className="bg-indigo-600 px-8 sm:px-10 py-4 sm:py-5 rounded-[2rem] font-black text-sm text-white uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-3"
+                    className="bg-emerald-600 px-8 sm:px-10 py-5 rounded-[2rem] font-black text-sm text-white uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/30 flex items-center gap-3"
                   >
-                    <Scan className="w-5 h-5" /> Verificar uno
+                    <CheckCircle className="w-5 h-5" /> Escanear y confirmar
                   </button>
+                  <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] text-center max-w-xs">
+                    Escaneas, suena el tono y confirmas cada instrumento con el botón verde
+                  </p>
                   <button
                     onClick={() => startScanner(true)}
-                    className="bg-emerald-600 px-8 sm:px-10 py-4 sm:py-5 rounded-[2rem] font-black text-sm text-white uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/20 flex items-center gap-3"
+                    className="bg-slate-800 px-6 sm:px-8 py-3 rounded-[2rem] font-black text-[10px] text-slate-300 uppercase tracking-widest hover:bg-slate-700 transition-all flex items-center gap-2 mt-1"
                   >
-                    <Package className="w-5 h-5" /> Inventario continuo
+                    <Package className="w-4 h-4" /> Modo rápido sin confirmar
                   </button>
-                  <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.2em] text-center max-w-xs">
-                    Continuo: apunta a cada QR uno tras otro y va contando sin detenerse
-                  </p>
                 </div>
               )}
 
@@ -985,10 +1006,10 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
             {/* Acciones */}
             <div className="flex gap-2 sm:gap-4">
               <button
-                onClick={() => { setActiveTab('scanner'); startScanner(true); }}
+                onClick={() => { setActiveTab('scanner'); startScanner(false); }}
                 className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
               >
-                <Package className="w-4 h-4" /> Escanear inventario
+                <CheckCircle className="w-4 h-4" /> Escanear inventario
               </button>
               <button
                 onClick={() => setShowSessionManager(true)}
