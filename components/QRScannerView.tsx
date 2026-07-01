@@ -25,6 +25,26 @@ const getAudioCtx = (): AudioContext | null => {
   }
 };
 
+/**
+ * Desbloquea el audio dentro de un gesto del usuario. En iOS no basta con resume():
+ * hay que reproducir un buffer (aunque sea silencioso) para habilitar el audio.
+ * Debe llamarse desde un onClick real (tocar un botón).
+ */
+const unlockAudio = () => {
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch {
+    // silencioso
+  }
+};
+
 /** Reproduce un sonido de beep usando Web Audio API */
 const playScanSound = (success: boolean) => {
   try {
@@ -298,7 +318,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
 
   const startScanner = useCallback(async (continuous = false) => {
     // Desbloquear el audio dentro del gesto del usuario (necesario en móvil).
-    getAudioCtx();
+    unlockAudio();
     setCameraError(null);
     setScanResult(null);
     setLiveFeedback(null);
@@ -395,6 +415,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
    *  característico y reabre la cámara para el siguiente. */
   const acceptScannedItem = () => {
     if (scanResult?.found && scanResult.item) {
+      unlockAudio(); // asegura audio desbloqueado dentro de este gesto (móvil)
       setScannedIds(prev => new Set(prev).add(String(scanResult.item!.id)));
       playRegisteredSound();
       setScanResult(null);
