@@ -5,7 +5,7 @@ import QRCodeLib from 'qrcode';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { InventoryItem } from '../types.ts';
-import { globalNormalize, getEstadoCategoria, isItemLoaned, escapeHtml, buildQRText, parseQRText } from '../utils.ts';
+import { globalNormalize, getEstadoCategoria, isItemLoaned, escapeHtml, buildQRUrl, parseQRText } from '../utils.ts';
 import { supabase } from '../supabaseClient.ts';
 
 /** Reproduce un sonido de beep usando Web Audio API */
@@ -477,9 +477,12 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
     setIsGenerating(true);
     const newImages = new Map<string, string>();
 
+    // El QR se genera como enlace apuntando al sitio actual, para que sirva tanto
+    // para abrir el formulario del estudiante como para el inventario dentro de la app.
+    const baseUrl = window.location.origin;
     for (const item of inventory) {
       try {
-        const text = buildQRText(item);
+        const text = buildQRUrl(item, baseUrl);
         const dataUrl = await QRCodeLib.toDataURL(text, {
           width: 200,
           margin: 1,
@@ -1091,6 +1094,135 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: GESTOR DE SESIONES DE INVENTARIO ── */}
+      {showSessionManager && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-bottom-4 duration-300">
+            <div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-5 sm:p-6 flex items-center justify-between z-10">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-white italic uppercase tracking-tighter">
+                  Sesiones de <span className="text-indigo-500">Inventario</span>
+                </h3>
+                <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.3em] mt-1">
+                  Inicia una nueva o continúa una anterior
+                </p>
+              </div>
+              <button
+                onClick={() => setShowSessionManager(false)}
+                className="p-3 bg-slate-950 rounded-2xl text-slate-500 hover:text-white transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 sm:p-6 space-y-5">
+              {/* Crear nueva sesión */}
+              <div className="space-y-2">
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Nueva sesión</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    value={sessionName}
+                    onChange={(e) => setSessionName(e.target.value)}
+                    placeholder={`Inventario ${new Date().toLocaleDateString('es-CL')}`}
+                    className="flex-1 bg-[#020617] border-2 border-slate-900 focus:border-indigo-500 rounded-xl sm:rounded-2xl py-3 sm:py-4 px-4 sm:px-6 text-white font-bold text-sm outline-none transition-all"
+                  />
+                  <button
+                    onClick={() => createSession(sessionName || undefined)}
+                    className="bg-indigo-600 px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs text-white uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                  >
+                    <Save className="w-4 h-4" /> Crear
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de sesiones guardadas */}
+              <div className="space-y-3 pt-2 border-t border-slate-800">
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
+                  Sesiones guardadas ({sessions.length})
+                </p>
+                {sessions.length === 0 && (
+                  <div className="text-center py-8">
+                    <FolderOpen className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+                    <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                      Aún no hay sesiones guardadas
+                    </p>
+                  </div>
+                )}
+                {sessions.map(session => {
+                  const isActive = session.id === activeSessionId;
+                  const pct = session.totalAtCreation > 0
+                    ? Math.round((session.scannedIds.length / session.totalAtCreation) * 100)
+                    : 0;
+                  return (
+                    <div
+                      key={session.id}
+                      className={`bg-[#020617] border p-4 rounded-2xl space-y-3 transition-all ${
+                        isActive ? 'border-emerald-500/40' : 'border-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-indigo-600/10 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-black text-indigo-400 leading-none">{session.scannedIds.length}</span>
+                          <span className="text-[7px] font-black text-indigo-600">/{session.totalAtCreation}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-white text-sm font-bold uppercase truncate">{session.name}</p>
+                            {isActive && (
+                              <span className="text-[7px] font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase tracking-widest flex-shrink-0">
+                                Activa
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest flex items-center gap-1 mt-1">
+                            <Calendar className="w-3 h-3" /> {formatDate(session.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-indigo-600 to-emerald-500 rounded-full"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        {!isActive && (
+                          <button
+                            onClick={() => resumeSession(session)}
+                            className="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 transition-all flex items-center justify-center gap-2"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" /> Continuar
+                          </button>
+                        )}
+                        {isActive && (
+                          <button
+                            onClick={() => setShowSessionManager(false)}
+                            className="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                          >
+                            <Scan className="w-3.5 h-3.5" /> Seguir escaneando
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (confirm(`¿Eliminar la sesión "${session.name}"? Esta acción no se puede deshacer.`)) {
+                              deleteSession(session.id);
+                            }
+                          }}
+                          className="py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest bg-rose-600/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600/20 transition-all flex items-center justify-center"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}

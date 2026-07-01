@@ -11,6 +11,8 @@ interface StudentCheckOutProps {
   onReturn: (id: string | number, fecha: string) => Promise<any> | void;
   onCancel?: () => void;
   isExternalView?: boolean;
+  /** Texto del QR (o payload) recibido por URL para preseleccionar instrumento automáticamente. */
+  initialQrText?: string | null;
 }
 
 /** Estructura agrupada: un estudiante con todos sus instrumentos */
@@ -20,7 +22,7 @@ interface StudentGroup {
   instruments: InventoryItem[];
 }
 
-const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm, onReturn, onCancel, isExternalView, availableStudents }) => {
+const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm, onReturn, onCancel, isExternalView, availableStudents, initialQrText }) => {
   const [mode, setMode] = useState<'out' | 'in'>('out');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<StudentGroup | null>(null);
@@ -293,6 +295,43 @@ const StudentCheckOut: React.FC<StudentCheckOutProps> = ({ inventory, onConfirm,
     setSearchTerm('');
     setInstrumentSearchTerm('');
   };
+
+  // ── Preselección automática cuando se abre el formulario desde el QR-enlace ──
+  const autoHandledRef = useRef(false);
+  useEffect(() => {
+    if (autoHandledRef.current) return;
+    if (!initialQrText) return;
+    if (inventory.length === 0) return; // esperar a que cargue el inventario
+    autoHandledRef.current = true;
+
+    const parsed = parseQRText(initialQrText);
+    const candidateId = parsed?.id ? String(parsed.id) : '';
+    const candidateSerie = safeNorm(parsed?.serie || initialQrText);
+    const item = inventory.find(i => String(i.id) === candidateId)
+      || inventory.find(i => candidateSerie && safeNorm(i.Serie) === candidateSerie);
+
+    if (!item) return; // no encontrado: dejar en búsqueda manual, sin molestar con alertas
+
+    // El estado actual del instrumento determina la acción: si está prestado → retorno; si no → salida.
+    const loaned = isItemLoaned(item);
+    setMode(loaned ? 'in' : 'out');
+
+    const rawName = (item.Estudiante || '').toString().trim();
+    if (rawName) {
+      const key = safeNorm(rawName);
+      const matchedGroup = studentGroups.find(g => safeNorm(g.studentName) === key) || {
+        studentName: rawName.toUpperCase(),
+        course: (item.Curso || 'SIN CURSO').toString().toUpperCase().trim(),
+        instruments: [item]
+      };
+      setSelectedStudent(matchedGroup);
+      setSelectedItem(item);
+    } else {
+      // Instrumento sin estudiante asignado: no se puede adivinar quién lo retira.
+      setInstrumentSearchTerm(item.Instrumento || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQrText, inventory]);
 
   // ── PANTALLA DE ESCANEO QR ──
   if (isScanning) {

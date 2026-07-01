@@ -13,18 +13,43 @@ export const escapeHtml = (val: unknown): string => {
         .replace(/'/g, "&#39;");
 };
 
-/** Genera el texto del QR para un instrumento */
+/** Genera el payload interno del QR de un instrumento (formato OSWT|id|serie|instrumento) */
 export const buildQRText = (item: InventoryItem): string => {
     return `OSWT|${item.id}|${item.Serie || 'NS'}|${item.Instrumento}`;
 };
 
-/** Parsea un QR escaneado (formato OSWT|id|serie|instrumento, con fallback a texto plano) */
+/**
+ * Genera el contenido del QR como ENLACE, para que un solo QR sirva para dos cosas:
+ *  - Al escanearlo con la cámara normal del teléfono, abre el formulario de salida/retorno.
+ *  - Al escanearlo dentro de la app (inventario), se extrae el payload y se cuenta igual.
+ * El payload OSWT viaja en el parámetro ?q= de la URL.
+ */
+export const buildQRUrl = (item: InventoryItem, baseUrl: string): string => {
+    const origin = (baseUrl || '').replace(/\/+$/, '');
+    const payload = buildQRText(item);
+    return `${origin}/?mode=student&q=${encodeURIComponent(payload)}`;
+};
+
+/**
+ * Parsea un QR escaneado. Acepta:
+ *  - Un enlace con parámetro ?q=OSWT|... (QR nuevos)
+ *  - El payload directo OSWT|id|serie|instrumento (QR antiguos de texto plano)
+ *  - Texto libre (serie o nombre) como último recurso
+ */
 export const parseQRText = (text: string): { id: string; serie: string; instrumento: string } | null => {
-    const parts = text.split('|');
+    let payload = String(text ?? '').trim();
+
+    // Si viene como enlace, extraer el payload del parámetro q=
+    const qMatch = payload.match(/[?&]q=([^&\s]+)/);
+    if (qMatch) {
+        try { payload = decodeURIComponent(qMatch[1]); } catch { payload = qMatch[1]; }
+    }
+
+    const parts = payload.split('|');
     if (parts.length >= 3 && parts[0] === 'OSWT') {
         return { id: parts[1], serie: parts[2], instrumento: parts[3] || '' };
     }
-    return { id: '', serie: text.trim(), instrumento: text.trim() };
+    return { id: '', serie: payload, instrumento: payload };
 };
 
 export const globalNormalize = (val: unknown): string => {

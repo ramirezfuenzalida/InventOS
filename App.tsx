@@ -39,7 +39,8 @@ type ViewMode = 'landing' | 'dashboard' | 'list' | 'student-check' | 'directory'
 
 const App: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
-  const isStudentModeUrl = queryParams.get('mode') === 'student';
+  const qrParam = queryParams.get('q');
+  const isStudentModeUrl = queryParams.get('mode') === 'student' || !!qrParam;
 
   const {
     data,
@@ -91,7 +92,7 @@ const App: React.FC = () => {
       
       const backupData = {
         backup_date: new Date().toISOString(),
-        version: "1.2.04 ExeApp",
+        version: "1.2.05 ExeApp",
         inventory: invRes.data || [],
         history: histRes.data || [],
         students: studRes.data || []
@@ -432,7 +433,7 @@ const App: React.FC = () => {
 
         <div className="p-4 sm:p-8 lg:p-12 w-full max-w-[1600px] mx-auto">
           {isStudentModeUrl ? (
-            <StudentCheckOut inventory={data} onConfirm={performCheckout} onReturn={performReturn} isExternalView={true} availableStudents={uniqueStudents} />
+            <StudentCheckOut inventory={data} onConfirm={performCheckout} onReturn={performReturn} isExternalView={true} availableStudents={uniqueStudents} initialQrText={qrParam} />
           ) : data.length === 0 ? (
             <div className="min-h-[85vh] flex flex-col items-center justify-center text-center">
               <div className="relative mb-16 bg-white p-6 rounded-[3rem] shadow-2xl min-w-[200px] min-h-[200px] flex items-center justify-center">
