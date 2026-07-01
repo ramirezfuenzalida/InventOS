@@ -336,23 +336,13 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   const handleScanResult = (rawText: string) => {
     const found = matchInstrument(rawText);
     if (found) {
-      // Modo individual: mostramos el instrumento y esperamos que el usuario
-      // lo acepte con el botón verde antes de contarlo en el inventario.
+      // Se cuenta al instante y se muestra la confirmación verde en la ficha.
       setScanResult({ found: true, item: found, raw: rawText });
+      setScannedIds(prev => new Set(prev).add(String(found.id)));
       playScanSound(true);
     } else {
       setScanResult({ found: false, raw: rawText });
       playScanSound(false);
-    }
-  };
-
-  /** Acepta el instrumento escaneado y lo cuenta en el inventario. */
-  const acceptScannedItem = () => {
-    if (scanResult?.found && scanResult.item) {
-      setScannedIds(prev => new Set(prev).add(String(scanResult.item!.id)));
-      playScanSound(true);
-      setScanResult(null);
-      startScanner(false);
     }
   };
 
@@ -844,30 +834,21 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                   </div>
                 )}
 
-                {/* Botón verde para ACEPTAR y contar el instrumento (solo si se encontró) */}
+                {/* Confirmación verde: el instrumento quedó contado en el inventario */}
                 {scanResult.found && scanResult.item && (
-                  scannedIds.has(String(scanResult.item.id)) ? (
-                    <div className="mt-6 py-4 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 text-center">
-                      <p className="text-emerald-400 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                        <CheckCircle className="w-4 h-4" /> Ya contado en el inventario ({scannedIds.size}/{inventory.length})
-                      </p>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={acceptScannedItem}
-                      className="w-full mt-6 py-5 sm:py-6 rounded-2xl sm:rounded-[2rem] font-black text-sm uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3"
-                    >
-                      <CheckCircle className="w-6 h-6" /> Aceptar y contar ({scannedIds.size}/{inventory.length})
-                    </button>
-                  )
+                  <div className="mt-6 py-4 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 text-center">
+                    <p className="text-emerald-400 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                      <CheckCircle className="w-5 h-5" /> Contado ({scannedIds.size}/{inventory.length})
+                    </p>
+                  </div>
                 )}
 
                 <div className="flex gap-4 mt-4">
                   <button
                     onClick={() => { setScanResult(null); startScanner(false); }}
-                    className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-slate-800 text-white hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
                   >
-                    <Scan className="w-4 h-4" /> {scanResult.found ? 'Escanear otro sin contar' : 'Escanear otro'}
+                    <Scan className="w-4 h-4" /> Escanear otro
                   </button>
                 </div>
               </div>

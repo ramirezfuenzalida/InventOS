@@ -7,7 +7,7 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { InventoryItem } from '../types.ts';
-import { globalNormalize } from '../utils.ts';
+import { globalNormalize, parseQRText } from '../utils.ts';
 import { supabase } from '../supabaseClient.ts';
 
 // Web Audio API beep sound
@@ -72,13 +72,8 @@ interface PresentationItem {
   returned_at: string | null;
 }
 
-const parseQRText = (text: string): { id: string; serie: string; instrumento: string } | null => {
-  const parts = text.split('|');
-  if (parts.length >= 3 && parts[0] === 'OSWT') {
-    return { id: parts[1], serie: parts[2], instrumento: parts[3] || '' };
-  }
-  return { id: '', serie: text.trim(), instrumento: text.trim() };
-};
+// parseQRText se importa desde utils.ts para entender los QR-enlace nuevos (?i=, ?q=)
+// además del formato antiguo de texto plano OSWT|...
 
 // Clasificador de instrumentos en base a Nombre y Familia
 const getInstrumentCategory = (itemName: string, familyName: string): string => {
