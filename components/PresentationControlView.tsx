@@ -389,8 +389,10 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
 
       setIsProcessingAction(true);
       
+      // No enviamos "id": la columna es uuid con default gen_random_uuid().
+      // Antes se mandaba un id de texto ("pres_item_...") y la inserción fallaba
+      // con "invalid input syntax for type uuid", rompiendo el registro de salida.
       const newPresItem = {
-        id: `pres_item_${Date.now()}`,
         session_id: activeSession.id,
         instrument_id: found.id,
         instrument_name: found.Instrumento,
