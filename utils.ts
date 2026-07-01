@@ -19,27 +19,37 @@ export const buildQRText = (item: InventoryItem): string => {
 };
 
 /**
- * Genera el contenido del QR como ENLACE, para que un solo QR sirva para dos cosas:
- *  - Al escanearlo con la cámara normal del teléfono, abre el formulario de salida/retorno.
- *  - Al escanearlo dentro de la app (inventario), se extrae el payload y se cuenta igual.
- * El payload OSWT viaja en el parámetro ?q= de la URL.
+ * Genera el contenido del QR como ENLACE CORTO (solo el id del instrumento), para que
+ * el mismo QR sirva para dos cosas y además sea fácil de escanear impreso pequeño:
+ *  - Con la cámara normal del teléfono abre el formulario de salida/retorno.
+ *  - Dentro de la app (inventario) se resuelve el id y se cuenta igual.
+ * Se usa solo el id (los 98 instrumentos tienen id único) para que el QR sea de baja
+ * densidad y se lea al instante; un enlace largo genera un QR denso difícil de leer.
  */
 export const buildQRUrl = (item: InventoryItem, baseUrl: string): string => {
     const origin = (baseUrl || '').replace(/\/+$/, '');
-    const payload = buildQRText(item);
-    return `${origin}/?mode=student&q=${encodeURIComponent(payload)}`;
+    return `${origin}/?i=${encodeURIComponent(String(item.id))}`;
 };
 
 /**
- * Parsea un QR escaneado. Acepta:
- *  - Un enlace con parámetro ?q=OSWT|... (QR nuevos)
- *  - El payload directo OSWT|id|serie|instrumento (QR antiguos de texto plano)
+ * Parsea un QR escaneado. Acepta, en orden:
+ *  - Enlace corto con ?i=<id> (QR nuevos, recomendado)
+ *  - Enlace con ?q=OSWT|... (formato intermedio)
+ *  - Payload directo OSWT|id|serie|instrumento (QR antiguos de texto plano)
  *  - Texto libre (serie o nombre) como último recurso
  */
 export const parseQRText = (text: string): { id: string; serie: string; instrumento: string } | null => {
     let payload = String(text ?? '').trim();
 
-    // Si viene como enlace, extraer el payload del parámetro q=
+    // Enlace corto: ?i=<id>
+    const iMatch = payload.match(/[?&]i=([^&\s]+)/);
+    if (iMatch) {
+        let idVal = iMatch[1];
+        try { idVal = decodeURIComponent(idVal); } catch { /* usar tal cual */ }
+        return { id: idVal, serie: '', instrumento: '' };
+    }
+
+    // Enlace con payload OSWT en ?q=
     const qMatch = payload.match(/[?&]q=([^&\s]+)/);
     if (qMatch) {
         try { payload = decodeURIComponent(qMatch[1]); } catch { payload = qMatch[1]; }

@@ -336,12 +336,23 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   const handleScanResult = (rawText: string) => {
     const found = matchInstrument(rawText);
     if (found) {
+      // Modo individual: mostramos el instrumento y esperamos que el usuario
+      // lo acepte con el botón verde antes de contarlo en el inventario.
       setScanResult({ found: true, item: found, raw: rawText });
-      setScannedIds(prev => new Set(prev).add(String(found.id)));
       playScanSound(true);
     } else {
       setScanResult({ found: false, raw: rawText });
       playScanSound(false);
+    }
+  };
+
+  /** Acepta el instrumento escaneado y lo cuenta en el inventario. */
+  const acceptScannedItem = () => {
+    if (scanResult?.found && scanResult.item) {
+      setScannedIds(prev => new Set(prev).add(String(scanResult.item!.id)));
+      playScanSound(true);
+      setScanResult(null);
+      startScanner(false);
     }
   };
 
@@ -484,8 +495,9 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
       try {
         const text = buildQRUrl(item, baseUrl);
         const dataUrl = await QRCodeLib.toDataURL(text, {
-          width: 200,
-          margin: 1,
+          width: 320,
+          margin: 4, // zona de silencio completa: mejora mucho la lectura impreso
+          errorCorrectionLevel: 'M',
           color: { dark: '#000000', light: '#ffffff' }
         });
         newImages.set(String(item.id), dataUrl);
@@ -505,8 +517,8 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
     const labels = inventory.map(item => {
       const qrSrc = qrImages.get(String(item.id)) || '';
       return `
-        <div style="display:inline-block;width:180px;padding:8px;margin:4px;border:1px solid #ccc;text-align:center;page-break-inside:avoid;font-family:system-ui">
-          ${qrSrc ? `<img src="${qrSrc}" style="width:120px;height:120px" />` : '<div style="width:120px;height:120px;background:#eee;margin:0 auto"></div>'}
+        <div style="display:inline-block;width:190px;padding:8px;margin:4px;border:1px solid #ccc;text-align:center;page-break-inside:avoid;font-family:system-ui">
+          ${qrSrc ? `<img src="${qrSrc}" style="width:150px;height:150px" />` : '<div style="width:150px;height:150px;background:#eee;margin:0 auto"></div>'}
           <div style="font-size:9px;font-weight:900;text-transform:uppercase;margin-top:4px;line-height:1.2">
             ${escapeHtml(item.Instrumento) || 'S/N'}
           </div>
@@ -832,12 +844,30 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                   </div>
                 )}
 
-                <div className="flex gap-4 mt-6">
+                {/* Botón verde para ACEPTAR y contar el instrumento (solo si se encontró) */}
+                {scanResult.found && scanResult.item && (
+                  scannedIds.has(String(scanResult.item.id)) ? (
+                    <div className="mt-6 py-4 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 text-center">
+                      <p className="text-emerald-400 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                        <CheckCircle className="w-4 h-4" /> Ya contado en el inventario ({scannedIds.size}/{inventory.length})
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={acceptScannedItem}
+                      className="w-full mt-6 py-5 sm:py-6 rounded-2xl sm:rounded-[2rem] font-black text-sm uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3"
+                    >
+                      <CheckCircle className="w-6 h-6" /> Aceptar y contar ({scannedIds.size}/{inventory.length})
+                    </button>
+                  )
+                )}
+
+                <div className="flex gap-4 mt-4">
                   <button
                     onClick={() => { setScanResult(null); startScanner(false); }}
-                    className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-slate-800 text-white hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
                   >
-                    <Scan className="w-4 h-4" /> ESCANEAR OTRO
+                    <Scan className="w-4 h-4" /> {scanResult.found ? 'Escanear otro sin contar' : 'Escanear otro'}
                   </button>
                 </div>
               </div>
