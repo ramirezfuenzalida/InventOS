@@ -40,6 +40,30 @@ const playScanSound = (success: boolean) => {
   }
 };
 
+/** Sonido característico de INGRESO confirmado: arpegio ascendente Do-Mi-Sol (inconfundible). */
+const playRegisteredSound = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+    const notes = [523.25, 659.25, 783.99]; // Do - Mi - Sol
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      const t = ctx.currentTime + i * 0.11;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      osc.start(t);
+      osc.stop(t + 0.18);
+    });
+  } catch (e) {
+    // silencioso
+  }
+};
+
 interface QRScannerViewProps {
   inventory: InventoryItem[];
   onViewInstrument?: (item: InventoryItem) => void;
@@ -293,7 +317,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
             const item = matchInstrument(decodedText);
             if (item) {
               setScannedIds(prev => new Set(prev).add(String(item.id)));
-              playScanSound(true);
+              playRegisteredSound();
               showLiveFeedback(true, `✓ ${item.Instrumento || 'Instrumento'}${item.Serie ? ` · ${item.Serie}` : ''}`);
             } else {
               playScanSound(false);
@@ -336,13 +360,24 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   const handleScanResult = (rawText: string) => {
     const found = matchInstrument(rawText);
     if (found) {
-      // Se cuenta al instante y se muestra la confirmación verde en la ficha.
+      // Muestra el instrumento y espera la confirmación del usuario con el botón verde.
+      // Beep corto de "leído" para avisar que se detectó el QR.
       setScanResult({ found: true, item: found, raw: rawText });
-      setScannedIds(prev => new Set(prev).add(String(found.id)));
       playScanSound(true);
     } else {
       setScanResult({ found: false, raw: rawText });
       playScanSound(false);
+    }
+  };
+
+  /** Confirma el ingreso del instrumento escaneado: lo cuenta, suena el tono
+   *  característico y reabre la cámara para el siguiente. */
+  const acceptScannedItem = () => {
+    if (scanResult?.found && scanResult.item) {
+      setScannedIds(prev => new Set(prev).add(String(scanResult.item!.id)));
+      playRegisteredSound();
+      setScanResult(null);
+      startScanner(false);
     }
   };
 
@@ -834,23 +869,48 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                   </div>
                 )}
 
-                {/* Confirmación verde: el instrumento quedó contado en el inventario */}
-                {scanResult.found && scanResult.item && (
-                  <div className="mt-6 py-4 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 text-center">
-                    <p className="text-emerald-400 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                      <CheckCircle className="w-5 h-5" /> Contado ({scannedIds.size}/{inventory.length})
-                    </p>
+                {scanResult.found && scanResult.item ? (
+                  scannedIds.has(String(scanResult.item.id)) ? (
+                    <>
+                      <div className="mt-6 py-4 rounded-2xl bg-emerald-600/15 border border-emerald-500/30 text-center">
+                        <p className="text-emerald-400 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                          <CheckCircle className="w-5 h-5" /> Ingresado ({scannedIds.size}/{inventory.length})
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => { setScanResult(null); startScanner(false); }}
+                        className="w-full mt-4 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                      >
+                        <Scan className="w-4 h-4" /> Escanear otro
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Botón grande de CONFIRMAR INGRESO para no perderse ningún registro */}
+                      <button
+                        onClick={acceptScannedItem}
+                        className="w-full mt-6 py-6 sm:py-7 rounded-2xl sm:rounded-[2rem] font-black text-base sm:text-lg uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 animate-pulse"
+                      >
+                        <CheckCircle className="w-7 h-7" /> Confirmar ingreso ({scannedIds.size}/{inventory.length})
+                      </button>
+                      <button
+                        onClick={() => { setScanResult(null); startScanner(false); }}
+                        className="w-full mt-3 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        <X className="w-4 h-4" /> Descartar y escanear otro
+                      </button>
+                    </>
+                  )
+                ) : (
+                  <div className="flex gap-4 mt-6">
+                    <button
+                      onClick={() => { setScanResult(null); startScanner(false); }}
+                      className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    >
+                      <Scan className="w-4 h-4" /> Escanear otro
+                    </button>
                   </div>
                 )}
-
-                <div className="flex gap-4 mt-4">
-                  <button
-                    onClick={() => { setScanResult(null); startScanner(false); }}
-                    className="flex-1 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] font-black text-xs uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
-                  >
-                    <Scan className="w-4 h-4" /> Escanear otro
-                  </button>
-                </div>
               </div>
             )}
 
