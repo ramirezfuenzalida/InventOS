@@ -51,9 +51,47 @@ export const syncExcelData = async (
   studentsData?: Student[]
 ) => {
   onProgress("Preparando datos para la base de datos...");
-  const dbItems = mappedData.map((item, idx) => {
+
+  // ── IDS ESTABLES ──
+  // Para que los QR impresos no se desfasen al reordenar/editar el Excel, conservamos
+  // el id de cada instrumento emparejándolo con el inventario existente por una clave
+  // de negocio (serie + instrumento + marca + modelo). Solo los instrumentos nuevos
+  // reciben un id nuevo; los que ya existían mantienen su id (y por tanto su QR).
+  const businessKey = (it: { Serie?: unknown; Instrumento?: unknown; Marca?: unknown; Modelo?: unknown }) =>
+    [it.Serie, it.Instrumento, it.Marca, it.Modelo].map(v => globalNormalize(v)).join('|');
+
+  let keyToId = new Map<string, string>();
+  let maxId = 0;
+  try {
+    const { data: existing } = await supabase
+      .from('inventory')
+      .select('id, Serie, Instrumento, Marca, Modelo');
+    (existing || []).forEach((row: any) => {
+      const k = businessKey(row);
+      if (k.replace(/\|/g, '').trim() !== '' && !keyToId.has(k)) {
+        keyToId.set(k, String(row.id));
+      }
+      const n = parseInt(String(row.id), 10);
+      if (!isNaN(n) && n > maxId) maxId = n;
+    });
+  } catch (e) {
+    // Si no se puede leer el inventario existente, caemos a ids nuevos secuenciales.
+    console.warn('No se pudo leer el inventario existente para conservar ids:', e);
+    keyToId = new Map();
+    maxId = 0;
+  }
+
+  const usedIds = new Set<string>();
+  const dbItems = mappedData.map((item) => {
     const { Telefono, Email, Apoderado, TelefonoApoderado, ...dbItem } = item;
-    return { ...dbItem, id: String(idx + 1) };
+    const k = businessKey(item);
+    let id = keyToId.get(k);
+    if (!id || usedIds.has(id)) {
+      maxId += 1;
+      id = String(maxId);
+    }
+    usedIds.add(id);
+    return { ...dbItem, id };
   });
 
   onProgress("Sincronizando inventario en el servidor de forma segura...");
