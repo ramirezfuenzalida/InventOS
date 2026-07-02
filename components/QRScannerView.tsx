@@ -78,25 +78,27 @@ const playScanSound = (success: boolean) => {
   }
 };
 
-/** Sonido característico de INGRESO confirmado: arpegio ascendente Do-Mi-Sol (inconfundible). */
+/** Sonido de CONFIRMACIÓN de ingreso: dos notas ascendentes tipo "listo/confirmado",
+ *  timbre redondo (sine) y con un poco de sustain, más definitivo que un arpegio. */
 const playRegisteredSound = () => {
   try {
     const ctx = getAudioCtx();
     if (!ctx) return;
-    const notes = [523.25, 659.25, 783.99]; // Do - Mi - Sol
+    const notes = [659.25, 987.77]; // Mi - Si (quinta ascendente, "di-diín" de confirmación)
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.type = 'triangle';
-      const t = ctx.currentTime + i * 0.11;
+      osc.type = 'sine';
+      const t = ctx.currentTime + i * 0.13;
+      const dur = i === notes.length - 1 ? 0.32 : 0.16; // la última nota suena un poco más
       osc.frequency.setValueAtTime(freq, t);
       gain.gain.setValueAtTime(0.001, t);
-      gain.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.45, t + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
       osc.start(t);
-      osc.stop(t + 0.18);
+      osc.stop(t + dur + 0.02);
     });
   } catch (e) {
     // silencioso
