@@ -27,14 +27,15 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, onItemClick }) =>
     : 0;
 
   return (
-    <div 
-      ref={parentRef} 
-      className="overflow-x-auto custom-scrollbar w-full max-w-full select-none" 
-      style={{ 
-        maxHeight: '75vh', 
-        overflowY: 'auto',
-        overscrollBehaviorX: 'contain', // Contiene el scroll horizontal para evitar mover la página
-        WebkitOverflowScrolling: 'touch' // Inercia fluida en iOS Safari
+    <div
+      ref={parentRef}
+      className="overflow-auto custom-scrollbar w-full max-w-full select-none"
+      style={{
+        maxHeight: '75vh',
+        // Scroll controlado: vertical y horizontal, pero sin la inercia/momentum que
+        // provocaba los movimientos diagonales "en círculo". overscroll-behavior en
+        // ambos ejes evita además que el gesto arrastre la página de fondo.
+        overscrollBehavior: 'contain'
       }}
     >
       <table className="min-w-full relative table-auto">

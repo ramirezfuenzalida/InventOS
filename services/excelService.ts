@@ -72,25 +72,19 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             };
 
             let extractedCurso = '';
-            let extractedSeccion = '';
 
             const rowKeys = Object.keys(row);
             rowKeys.forEach(key => {
               const normKey = globalNormalize(key).replace(/\s+/g, '');
 
-              // Detectar Curso
+              // Detectar Curso. Nota: NO se combina con "seccion" porque en este Excel
+              // la columna "seccion" contiene la familia de instrumentos (Cuerdas,
+              // Vientos, etc.), no una sección de clase; el curso ya viene completo
+              // (ej. "7 BASICO A"). Combinarlo ensuciaba el curso con el grupo.
               const coursePatterns = ['curso', 'grade', 'course', 'ano', 'año', 'grado', 'nivel', 'estamento', 'nivel_escolar', 'aula', 'division', 'división', 'itinerario', 'nivel academico', 'nivel académico', 'escolaridad', 'curso / grado'];
               if (coursePatterns.some(p => globalNormalize(p).replace(/\s+/g, '') === normKey)) {
                 if (!extractedCurso) {
                   extractedCurso = String(row[key] || '').trim();
-                }
-              }
-
-              // Detectar Sección
-              const seccionPatterns = ['seccion', 'sección', 'grupo', 'paralelo', 'letra'];
-              if (seccionPatterns.some(p => globalNormalize(p).replace(/\s+/g, '') === normKey)) {
-                if (!extractedSeccion) {
-                  extractedSeccion = String(row[key] || '').trim();
                 }
               }
 
@@ -105,16 +99,7 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
               }
             });
 
-            // Combinar Curso y Sección inteligentemente
-            let combinedCourse = 'SIN CURSO';
-            if (extractedCurso) {
-              if (extractedSeccion && !extractedCurso.toUpperCase().includes(extractedSeccion.toUpperCase())) {
-                combinedCourse = `${extractedCurso} ${extractedSeccion}`;
-              } else {
-                combinedCourse = extractedCurso;
-              }
-            }
-            mapped.course = combinedCourse;
+            mapped.course = extractedCurso || 'SIN CURSO';
 
             const name = String(mapped.name || '').replace(/_/g, ' ').toUpperCase().trim();
             const course = normalizeCourse(mapped.course);
@@ -187,24 +172,16 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
           const excelKeys = Object.keys(row);
 
           let inventoryCurso = '';
-          let inventorySeccion = '';
 
           excelKeys.forEach(excelKey => {
             const normExcelKey = globalNormalize(excelKey);
 
-            // Detectar Curso de Inventario
+            // Detectar Curso de Inventario (sin combinar con "seccion": ver nota en la
+            // hoja de estudiantes; la sección es la familia de instrumentos, no la clase).
             const coursePatterns = ['curso', 'grado', 'nivel', 'clase', 'ano', 'año', 'periodo', 'estamento', 'nivel_escolar', 'aula', 'division', 'división', 'itinerario', 'nivel academico', 'nivel académico', 'escolaridad', 'curso / grado'];
             if (coursePatterns.some(p => normExcelKey === globalNormalize(p))) {
               if (!inventoryCurso) {
                 inventoryCurso = String(row[excelKey] || '').trim();
-              }
-            }
-
-            // Detectar Sección de Inventario
-            const seccionPatterns = ['seccion', 'sección', 'grupo', 'paralelo', 'letra'];
-            if (seccionPatterns.some(p => normExcelKey === globalNormalize(p))) {
-              if (!inventorySeccion) {
-                inventorySeccion = String(row[excelKey] || '').trim();
               }
             }
 
@@ -257,16 +234,8 @@ export const processExcelFile = async (file: File): Promise<ExcelParseResult> =>
             }
           });
 
-          // Combinar Curso y Sección de Inventario
-          let combinedInventoryCourse = 'SIN CURSO';
-          if (inventoryCurso) {
-            if (inventorySeccion && !inventoryCurso.toUpperCase().includes(inventorySeccion.toUpperCase())) {
-              combinedInventoryCourse = `${inventoryCurso} ${inventorySeccion}`;
-            } else {
-              combinedInventoryCourse = inventoryCurso;
-            }
-          }
-          mappedItem.Curso = normalizeCourse(combinedInventoryCourse);
+          // Curso del inventario: solo el valor del curso, sin combinar con sección.
+          mappedItem.Curso = normalizeCourse(inventoryCurso || 'SIN CURSO');
 
           // Unify mappedItem structure with metadata
           const resultRow: Record<string, unknown> = { ...mappedItem };
