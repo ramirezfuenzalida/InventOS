@@ -1031,9 +1031,25 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
                             : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
                         }`}
                       >
-                        <CheckCircle className={`w-4 h-4 transition-transform duration-300 ${scanMode === 'retorno' ? 'scale-110' : ''}`} /> 
+                        <CheckCircle className={`w-4 h-4 transition-transform duration-300 ${scanMode === 'retorno' ? 'scale-110' : ''}`} />
                         <span>Modo Retorno</span>
                       </button>
+                    </div>
+
+                    {/* CONTADOR DE TOTALES DE LA PRESENTACIÓN */}
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      <div className="bg-[#020617] p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-amber-500/20 text-center">
+                        <p className="text-2xl sm:text-3xl font-black text-amber-400 leading-none">{sessionItems.length}</p>
+                        <p className="text-[8px] sm:text-[9px] font-black text-amber-600 uppercase tracking-widest mt-1">Salieron (total)</p>
+                      </div>
+                      <div className="bg-[#020617] p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-indigo-500/20 text-center">
+                        <p className="text-2xl sm:text-3xl font-black text-indigo-400 leading-none">{totalPendingAll}</p>
+                        <p className="text-[8px] sm:text-[9px] font-black text-indigo-600 uppercase tracking-widest mt-1">Aún fuera</p>
+                      </div>
+                      <div className="bg-[#020617] p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-emerald-500/20 text-center">
+                        <p className="text-2xl sm:text-3xl font-black text-emerald-400 leading-none">{totalReturnedAll}</p>
+                        <p className="text-[8px] sm:text-[9px] font-black text-emerald-600 uppercase tracking-widest mt-1">Retornados</p>
+                      </div>
                     </div>
 
                     {/* VISOR CÁMARA */}
