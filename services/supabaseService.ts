@@ -13,11 +13,27 @@ export const fetchInitialData = async () => {
     if (invRes.error) throw invRes.error;
 
     // Si hay error de permisos (esperable en modo anónimo), devolvemos listas vacías sin lanzar excepción
-    const history = histRes.error ? [] : (histRes.data as MovementRecord[]) || [];
-    const students = studRes.error ? [] : (studRes.data as Student[]) || [];
+    let history = histRes.error ? [] : (histRes.data as MovementRecord[]) || [];
+    let inventory = (invRes.data as InventoryItem[]) || [];
+    let students = studRes.error ? [] : (studRes.data as Student[]) || [];
+
+    // Modo anónimo (estudiante sin sesión): las tablas no son legibles por RLS y vienen vacías.
+    // Usamos una función pública que entrega SOLO lo necesario para el formulario de
+    // salida/retorno (nombres, curso e instrumentos), sin datos de contacto de los estudiantes.
+    if (inventory.length === 0 && students.length === 0) {
+      try {
+        const { data: pub, error: pubErr } = await supabase.rpc('rpc_public_checkout_data');
+        if (!pubErr && pub) {
+          inventory = (pub.inventory as InventoryItem[]) || [];
+          students = (pub.students as Student[]) || [];
+        }
+      } catch (e) {
+        console.warn('No se pudo cargar el directorio público para el formulario:', e);
+      }
+    }
 
     const data = {
-      inventory: (invRes.data as InventoryItem[]) || [],
+      inventory,
       history,
       students
     };
