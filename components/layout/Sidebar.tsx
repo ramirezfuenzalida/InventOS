@@ -20,7 +20,7 @@ import {
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 const APP_NAME = "OSWT";
 const APP_SUBTITLE = "Orquesta Sinfónica William Taylor";
-const APP_VERSION = "1.2.25 ExeApp";
+const APP_VERSION = "1.2.26 ExeApp";
 
 interface SidebarProps {
   isMobileMenuOpen: boolean;
@@ -115,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">Sesión activa</p>
                     <p className="text-[11px] font-bold text-slate-300 truncate">{userEmail}</p>
                     <span className={`inline-block mt-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${isAdmin ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/25' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'}`}>
-                      {isAdmin ? 'Administrador' : 'Monitor'}
+                      {isAdmin ? 'Director' : 'Monitor'}
                     </span>
                   </div>
                 )}
@@ -147,10 +147,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-[9px] font-black uppercase tracking-widest">Oscuro</span>
               </button>
             </div>
-            <div className="mt-3 text-center">
-              <span className="text-[8px] font-bold text-slate-600 uppercase tracking-[0.2em] opacity-50">
+            <div className="mt-3 text-center space-y-1">
+              <span className="block text-[8px] font-bold text-slate-600 uppercase tracking-[0.2em] opacity-50">
                 {APP_VERSION}
               </span>
+              {isAuthenticated && (
+                <span className={`block text-[9px] font-black uppercase tracking-[0.25em] ${isAdmin ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                  {isAdmin ? 'Director' : 'Monitor'}
+                </span>
+              )}
             </div>
           </div>
         </div>
