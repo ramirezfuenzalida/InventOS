@@ -23,6 +23,7 @@ export const useInventoryData = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingMessage, setProcessingMessage] = useState("PROCESANDO...");
   const isDeletingRef = useRef(false);
+  const invalidateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: initialData, isLoading } = useQuery<CacheData, Error>({
     queryKey: ['inventoryData'],
@@ -34,10 +35,14 @@ export const useInventoryData = () => {
   const history = initialData?.history || [];
   const students = initialData?.students || [];
 
+  // Debounce: si llegan muchos cambios por realtime en ráfaga (varios teléfonos
+  // escaneando a la vez), se agrupan en una sola recarga para no saturar.
   const invalidateData = useCallback(() => {
-    if (!isDeletingRef.current) {
+    if (isDeletingRef.current) return;
+    if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
+    invalidateTimerRef.current = setTimeout(() => {
       queryClient.invalidateQueries({ queryKey: ['inventoryData'] });
-    }
+    }, 500);
   }, [queryClient]);
 
   useEffect(() => {
@@ -54,6 +59,7 @@ export const useInventoryData = () => {
       .subscribe();
 
     return () => {
+      if (invalidateTimerRef.current) clearTimeout(invalidateTimerRef.current);
       supabase.removeChannel(inventoryChannel);
       supabase.removeChannel(historyChannel);
       supabase.removeChannel(studentsChannel);

@@ -95,7 +95,7 @@ const App: React.FC = () => {
       
       const backupData = {
         backup_date: new Date().toISOString(),
-        version: "1.2.19 ExeApp",
+        version: "1.2.20 ExeApp",
         inventory: invRes.data || [],
         history: histRes.data || [],
         students: studRes.data || []
@@ -127,24 +127,20 @@ const App: React.FC = () => {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
+    // Se ejecuta una sola vez al montar (antes se re-suscribía en cada navegación).
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsAuthLoading(false);
-      if (session && viewMode === 'landing') {
-        setViewMode('dashboard');
-      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setIsAuthLoading(false);
-      if (session && viewMode === 'landing') {
-        setViewMode('dashboard');
-      }
     });
 
     return () => subscription.unsubscribe();
-  }, [viewMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
