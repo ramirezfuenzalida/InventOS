@@ -20,7 +20,7 @@ import {
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 const APP_NAME = "OSWT";
 const APP_SUBTITLE = "Orquesta Sinfónica William Taylor";
-const APP_VERSION = "1.2.17 ExeApp";
+const APP_VERSION = "1.2.18 ExeApp";
 
 interface SidebarProps {
   isMobileMenuOpen: boolean;
@@ -32,6 +32,7 @@ interface SidebarProps {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   isAuthenticated: boolean;
+  isAdmin?: boolean;
   onSignOut: () => void;
   onDownloadBackup?: () => void;
 }
@@ -61,6 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme,
   toggleTheme,
   isAuthenticated,
+  isAdmin = false,
   onSignOut,
   onDownloadBackup
 }) => {
@@ -95,14 +97,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             
             {isAuthenticated && (
               <>
-                <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Herramientas</div>
-                <label className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-indigo-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all"><FileUp className="w-5 h-5 mr-3" /> Actualizar Excel<input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} /></label>
-                <button onClick={() => { onDownloadBackup?.(); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-emerald-400 hover:text-white hover:bg-white/5 transition-all"><Download className="w-5 h-5 mr-3" /> Descargar Resguardo</button>
-                <button onClick={() => { setShowHistoryDeleteConfirm(true); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all"><Trash2 className="w-5 h-5 mr-3" /> Borrar Reportes</button>
-                
-                <button 
+                {/* Herramientas de administración: solo para el admin, no para monitores */}
+                {isAdmin && (
+                  <>
+                    <div className="pt-10 px-5 mb-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">Herramientas</div>
+                    <label className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-indigo-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all"><FileUp className="w-5 h-5 mr-3" /> Actualizar Excel<input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileUpload} /></label>
+                    <button onClick={() => { onDownloadBackup?.(); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-emerald-400 hover:text-white hover:bg-white/5 transition-all"><Download className="w-5 h-5 mr-3" /> Descargar Resguardo</button>
+                    <button onClick={() => { setShowHistoryDeleteConfirm(true); setIsMobileMenuOpen(false); }} className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all"><Trash2 className="w-5 h-5 mr-3" /> Borrar Reportes</button>
+                  </>
+                )}
+
+                <button
                   onClick={() => { onSignOut(); setIsMobileMenuOpen(false); }}
-                  className="flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-400 hover:bg-rose-500/10 transition-all mt-6"
+                  className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-400 hover:bg-rose-500/10 transition-all ${isAdmin ? 'mt-6' : 'mt-10'}`}
                 >
                   <LogOut className="w-5 h-5 mr-3 text-rose-500" /> Cerrar Sesión
                 </button>

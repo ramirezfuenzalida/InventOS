@@ -9,6 +9,7 @@ interface HeaderProps {
   data: InventoryItem[];
   setShowOverdueAlerts: (val: boolean) => void;
   setShowInventoryForm: (val: boolean) => void;
+  isAdmin?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,7 +17,8 @@ export const Header: React.FC<HeaderProps> = ({
   viewMode,
   data,
   setShowOverdueAlerts,
-  setShowInventoryForm
+  setShowInventoryForm,
+  isAdmin = false
 }) => {
   
   const handleExport = async () => {
@@ -42,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
       <div className="flex items-center gap-3">
         {data.length > 0 && <OverdueBadge inventory={data} onClick={() => setShowOverdueAlerts(true)} />}
-        {viewMode === 'list' && (
+        {viewMode === 'list' && isAdmin && (
           <button
             onClick={() => setShowInventoryForm(true)}
             className="bg-indigo-600 px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black text-white uppercase flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"

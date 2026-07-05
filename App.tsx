@@ -95,7 +95,7 @@ const App: React.FC = () => {
       
       const backupData = {
         backup_date: new Date().toISOString(),
-        version: "1.2.17 ExeApp",
+        version: "1.2.18 ExeApp",
         inventory: invRes.data || [],
         history: histRes.data || [],
         students: studRes.data || []
@@ -188,6 +188,11 @@ const App: React.FC = () => {
 
   // Si requiere login y no hay sesión activa, bloqueamos el panel
   const needsAuth = isProtectedView && !session && !isStudentModeUrl;
+
+  // Rol admin: solo estos correos ven las acciones destructivas (Excel, borrar, resguardo).
+  // El resto de cuentas @cmwt.cl (monitores) solo operan. Debe coincidir con is_app_admin() en la BD.
+  const ADMIN_EMAILS = ['exequiel.ramirez@cmwt.cl'];
+  const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email.toLowerCase());
 
   const filteredData = useMemo(() => {
     let base = [...data];
@@ -393,6 +398,7 @@ const App: React.FC = () => {
           theme={theme}
           toggleTheme={toggleTheme}
           isAuthenticated={!!session}
+          isAdmin={isAdmin}
           onSignOut={handleSignOut}
           onDownloadBackup={handleDownloadBackup}
         />
@@ -406,6 +412,7 @@ const App: React.FC = () => {
             data={data}
             setShowOverdueAlerts={setShowOverdueAlerts}
             setShowInventoryForm={setShowInventoryForm}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -490,7 +497,7 @@ const App: React.FC = () => {
                   onBackToDashboard={() => setViewMode('dashboard')}
                 />
               )}
-              {viewMode === 'reports' && <ReportsView history={history} onClearHistory={() => setShowHistoryDeleteConfirm(true)} />}
+              {viewMode === 'reports' && <ReportsView history={history} onClearHistory={() => setShowHistoryDeleteConfirm(true)} canClear={isAdmin} />}
               {viewMode === 'qr-access' && <QRAccessView />}
               {viewMode === 'qr-scanner' && <QRScannerView inventory={data} onViewInstrument={(item) => setSelectedInstrument(item)} />}
               {viewMode === 'presentation-control' && <PresentationControlView inventory={data} onViewInstrument={(item) => setSelectedInstrument(item)} />}

@@ -23,6 +23,7 @@ import { supabase } from '../supabaseClient.ts';
 interface ReportsViewProps {
   history: MovementRecord[];
   onClearHistory: () => Promise<void>;
+  canClear?: boolean;
 }
 
 const MESES = [
@@ -52,7 +53,7 @@ interface PresentationItem {
   returned_at: string | null;
 }
 
-const ReportsView: React.FC<ReportsViewProps> = ({ history, onClearHistory }) => {
+const ReportsView: React.FC<ReportsViewProps> = ({ history, onClearHistory, canClear = true }) => {
   // Pestaña principal: 'hogares' (préstamos tradicionales) o 'presentaciones'
   const [activeTab, setActiveTab] = useState<'hogares' | 'presentaciones'>('hogares');
 
@@ -329,17 +330,19 @@ const ReportsView: React.FC<ReportsViewProps> = ({ history, onClearHistory }) =>
                 <FileText className="w-4 h-4" /> Exportar PDF
               </button>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onClearHistory();
-                }}
-                className="p-3 bg-red-600/10 hover:bg-red-600 group rounded-xl transition-all border border-red-500/20 hover:border-red-500 cursor-pointer flex items-center justify-center"
-                title="Borrar todo el historial"
-              >
-                <Trash2 className="w-5 h-5 text-red-500 group-hover:text-white transition-colors" />
-              </button>
+              {canClear && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onClearHistory();
+                  }}
+                  className="p-3 bg-red-600/10 hover:bg-red-600 group rounded-xl transition-all border border-red-500/20 hover:border-red-500 cursor-pointer flex items-center justify-center"
+                  title="Borrar todo el historial"
+                >
+                  <Trash2 className="w-5 h-5 text-red-500 group-hover:text-white transition-colors" />
+                </button>
+              )}
             </div>
           </div>
 
