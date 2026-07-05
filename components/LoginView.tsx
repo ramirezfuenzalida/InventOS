@@ -75,24 +75,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose }) => {
                 className="absolute -inset-[3px] rounded-[1.9rem] opacity-70 [animation:spin_10s_linear_infinite] motion-reduce:[animation:none]"
                 style={{ background: 'conic-gradient(from 0deg, transparent 0deg, rgba(129,140,248,0.95) 80deg, transparent 190deg, rgba(139,92,246,0.75) 300deg, transparent 360deg)' }}
               />
-              {/* Tile glossy (estilo app-icon): el logo llena el recuadro y su fondo
-                  blanco se funde con el tile, sin costura visible. */}
+              {/* Tile app-icon: blanco uniforme; el logo llena el recuadro sin costura. */}
               <div
                 className="relative w-28 h-28 rounded-[1.75rem] overflow-hidden bg-white"
-                style={{
-                  boxShadow: 'inset 0 -14px 28px rgba(79,70,229,0.22), 0 24px 60px rgba(79,70,229,0.5)'
-                }}
+                style={{ boxShadow: '0 24px 60px rgba(79,70,229,0.5)' }}
               >
                 <img
                   src={`${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`}
                   alt="Logo Orquesta Sinfónica William Taylor"
-                  className="absolute inset-0 w-full h-full object-contain scale-[1.18]"
+                  className="absolute inset-0 w-full h-full object-contain scale-[1.06]"
                 />
-                {/* Reflejo especular (gloss) sobre el logo */}
-                <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/70 to-transparent pointer-events-none" />
-                <div className="absolute top-2 left-3 right-9 h-6 rounded-full bg-white/80 blur-md opacity-70 pointer-events-none" />
-                {/* Aro interior sutil para definir el borde del ícono */}
-                <div className="absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-indigo-500/15 pointer-events-none" />
               </div>
             </div>
 
