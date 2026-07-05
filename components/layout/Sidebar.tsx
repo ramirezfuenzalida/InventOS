@@ -20,7 +20,7 @@ import {
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 const APP_NAME = "OSWT";
 const APP_SUBTITLE = "Orquesta Sinfónica William Taylor";
-const APP_VERSION = "1.2.24 ExeApp";
+const APP_VERSION = "1.2.25 ExeApp";
 
 interface SidebarProps {
   isMobileMenuOpen: boolean;
@@ -33,6 +33,7 @@ interface SidebarProps {
   toggleTheme: () => void;
   isAuthenticated: boolean;
   isAdmin?: boolean;
+  userEmail?: string | null;
   onSignOut: () => void;
   onDownloadBackup?: () => void;
 }
@@ -63,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   toggleTheme,
   isAuthenticated,
   isAdmin = false,
+  userEmail,
   onSignOut,
   onDownloadBackup
 }) => {
@@ -107,9 +109,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </>
                 )}
 
+                {/* Sesión activa en este dispositivo */}
+                {userEmail && (
+                  <div className={`mx-2 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 ${isAdmin ? 'mt-8' : 'mt-10'}`}>
+                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">Sesión activa</p>
+                    <p className="text-[11px] font-bold text-slate-300 truncate">{userEmail}</p>
+                    <span className={`inline-block mt-2 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${isAdmin ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/25' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'}`}>
+                      {isAdmin ? 'Administrador' : 'Monitor'}
+                    </span>
+                  </div>
+                )}
+
                 <button
                   onClick={() => { onSignOut(); setIsMobileMenuOpen(false); }}
-                  className={`flex w-full items-center px-5 py-4 text-sm font-semibold rounded-2xl text-rose-400 hover:bg-rose-500/10 transition-all ${isAdmin ? 'mt-6' : 'mt-10'}`}
+                  className="flex w-full items-center px-5 py-4 mt-3 text-sm font-semibold rounded-2xl text-rose-400 hover:bg-rose-500/10 transition-all"
                 >
                   <LogOut className="w-5 h-5 mr-3 text-rose-500" /> Cerrar Sesión
                 </button>
