@@ -75,21 +75,24 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose }) => {
                 className="absolute -inset-[3px] rounded-[1.9rem] opacity-70 [animation:spin_10s_linear_infinite] motion-reduce:[animation:none]"
                 style={{ background: 'conic-gradient(from 0deg, transparent 0deg, rgba(129,140,248,0.95) 80deg, transparent 190deg, rgba(139,92,246,0.75) 300deg, transparent 360deg)' }}
               />
-              {/* Tile glossy claro (estilo app-icon) con el logo */}
+              {/* Tile glossy (estilo app-icon): el logo llena el recuadro y su fondo
+                  blanco se funde con el tile, sin costura visible. */}
               <div
-                className="relative w-28 h-28 rounded-[1.75rem] flex items-center justify-center p-2.5"
+                className="relative w-28 h-28 rounded-[1.75rem] overflow-hidden bg-white"
                 style={{
-                  background: 'radial-gradient(130% 130% at 30% 20%, #ffffff 0%, #eef2ff 46%, #c7d2fe 100%)',
-                  boxShadow: 'inset 0 2px 5px rgba(255,255,255,0.95), inset 0 -12px 26px rgba(79,70,229,0.28), 0 24px 60px rgba(79,70,229,0.5)'
+                  boxShadow: 'inset 0 -14px 28px rgba(79,70,229,0.22), 0 24px 60px rgba(79,70,229,0.5)'
                 }}
               >
-                {/* Reflejo especular (gloss) */}
-                <div className="absolute top-2.5 left-4 right-9 h-7 rounded-full bg-white/85 blur-md opacity-80 pointer-events-none" />
                 <img
                   src={`${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`}
                   alt="Logo Orquesta Sinfónica William Taylor"
-                  className="relative z-10 w-full h-full object-contain drop-shadow-[0_4px_10px_rgba(30,27,75,0.35)]"
+                  className="absolute inset-0 w-full h-full object-contain scale-[1.18]"
                 />
+                {/* Reflejo especular (gloss) sobre el logo */}
+                <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/70 to-transparent pointer-events-none" />
+                <div className="absolute top-2 left-3 right-9 h-6 rounded-full bg-white/80 blur-md opacity-70 pointer-events-none" />
+                {/* Aro interior sutil para definir el borde del ícono */}
+                <div className="absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-indigo-500/15 pointer-events-none" />
               </div>
             </div>
 
