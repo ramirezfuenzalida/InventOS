@@ -437,6 +437,42 @@
     html:not(.dark) body::after {
       background: radial-gradient(circle, rgba(16, 185, 129, 0.03) 0%, rgba(255, 255, 255, 0) 70%);
     }
+
+    /* ── Modo claro: superficies faltantes (tablas, pestañas, tarjetas, overlays) ── */
+    /* Contenedores/tracks oscuros → gris muy claro (segmented controls, chips) */
+    html:not(.dark) .bg-\[\#0A0C14\] { background-color: #f1f5f9 !important; border-color: #e2e8f0 !important; }
+    html:not(.dark) .bg-\[\#050914\] { background-color: #f8fafc !important; }
+    /* Tarjetas oscuras → blanco */
+    html:not(.dark) .bg-\[\#0b0f24\],
+    html:not(.dark) .bg-\[\#0a0f26\],
+    html:not(.dark) .bg-slate-900\/50,
+    html:not(.dark) .bg-slate-900\/60 { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
+    html:not(.dark) .bg-slate-900\/95 { background-color: rgba(255,255,255,0.97) !important; }
+    html:not(.dark) .bg-slate-950\/80,
+    html:not(.dark) .bg-slate-950\/50 { background-color: #f1f5f9 !important; }
+    /* Cuerpo de tabla y overlays translúcidos oscuros → transparentes/claros */
+    html:not(.dark) .bg-\[\#020617\]\/40 { background-color: transparent !important; }
+    html:not(.dark) .bg-\[\#020617\]\/60 { background-color: rgba(255,255,255,0.70) !important; }
+    html:not(.dark) .bg-\[\#020617\]\/80 { background-color: rgba(255,255,255,0.85) !important; }
+    /* Retornos de fondo negro translúcido (backdrops de modales) → blanco translúcido */
+    html:not(.dark) .bg-black\/40 { background-color: rgba(0,0,0,0.03) !important; }
+    html:not(.dark) .bg-black\/60 { background-color: rgba(255,255,255,0.60) !important; }
+    html:not(.dark) .bg-black\/70 { background-color: rgba(255,255,255,0.70) !important; }
+    html:not(.dark) .bg-black\/85 { background-color: rgba(255,255,255,0.85) !important; }
+    html:not(.dark) .bg-black\/90 { background-color: rgba(255,255,255,0.90) !important; }
+    /* Botón/superficie slate-800 sólido → gris claro */
+    html:not(.dark) .bg-slate-800 { background-color: #e2e8f0 !important; }
+    html:not(.dark) .bg-slate-800\/90 { background-color: rgba(226,232,240,0.9) !important; }
+    /* Hover de superficies oscuras */
+    html:not(.dark) .hover\:bg-slate-900:hover { background-color: #f1f5f9 !important; }
+    html:not(.dark) .hover\:bg-slate-800:hover { background-color: #e2e8f0 !important; }
+    html:not(.dark) .hover\:bg-slate-700:hover { background-color: #cbd5e1 !important; }
+    /* Divisores oscuros entre filas → gris claro */
+    html:not(.dark) .divide-slate-900\/30 > :not([hidden]) ~ :not([hidden]),
+    html:not(.dark) .divide-slate-900\/10 > :not([hidden]) ~ :not([hidden]) { border-color: #e2e8f0 !important; }
+    html:not(.dark) .border-slate-900\/10 { border-color: #eef2f6 !important; }
+    /* Texto muy tenue: asegurar legibilidad sobre blanco */
+    html:not(.dark) .text-slate-800 { color: #64748b !important; }
   </style>
 </head>
 
