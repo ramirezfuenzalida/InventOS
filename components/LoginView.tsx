@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient.ts';
-import { Lock, Mail, AlertCircle, Eye, EyeOff, Loader2, Music4 } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface LoginViewProps {
   onSuccess: () => void;
@@ -66,35 +66,38 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose }) => {
 
           <div className="relative z-10 flex flex-col items-center text-center">
 
-            {/* ── Medallón glossy (ícono llamativo) ── */}
-            <div className="relative mb-7">
+            {/* ── Medallón glossy con el logo de la app ── */}
+            <div className="relative mb-8">
               {/* Halo */}
-              <div className="absolute -inset-5 rounded-full bg-indigo-500/40 blur-2xl animate-pulse motion-reduce:animate-none" />
+              <div className="absolute -inset-6 rounded-[2.2rem] bg-indigo-500/45 blur-2xl animate-pulse motion-reduce:animate-none" />
               {/* Anillo cónico girando (sutil) */}
               <div
-                className="absolute -inset-[3px] rounded-full opacity-70 [animation:spin_9s_linear_infinite] motion-reduce:[animation:none]"
-                style={{ background: 'conic-gradient(from 0deg, transparent 0deg, rgba(129,140,248,0.9) 90deg, transparent 200deg, rgba(139,92,246,0.7) 300deg, transparent 360deg)' }}
+                className="absolute -inset-[3px] rounded-[1.9rem] opacity-70 [animation:spin_10s_linear_infinite] motion-reduce:[animation:none]"
+                style={{ background: 'conic-gradient(from 0deg, transparent 0deg, rgba(129,140,248,0.95) 80deg, transparent 190deg, rgba(139,92,246,0.75) 300deg, transparent 360deg)' }}
               />
-              {/* Orbe */}
+              {/* Tile glossy claro (estilo app-icon) con el logo */}
               <div
-                className="relative w-24 h-24 rounded-full flex items-center justify-center"
+                className="relative w-28 h-28 rounded-[1.75rem] flex items-center justify-center p-2.5"
                 style={{
-                  background: 'radial-gradient(125% 125% at 32% 24%, #a5b4fc 0%, #6366f1 34%, #4338ca 62%, #1e1b4b 100%)',
-                  boxShadow: 'inset 0 2px 6px rgba(255,255,255,0.55), inset 0 -10px 22px rgba(0,0,0,0.55), 0 22px 55px rgba(79,70,229,0.55)'
+                  background: 'radial-gradient(130% 130% at 30% 20%, #ffffff 0%, #eef2ff 46%, #c7d2fe 100%)',
+                  boxShadow: 'inset 0 2px 5px rgba(255,255,255,0.95), inset 0 -12px 26px rgba(79,70,229,0.28), 0 24px 60px rgba(79,70,229,0.5)'
                 }}
               >
                 {/* Reflejo especular (gloss) */}
-                <div className="absolute top-2.5 left-5 right-9 h-7 rounded-full bg-white/60 blur-md opacity-80 pointer-events-none" />
-                <div className="absolute bottom-3 right-4 w-6 h-6 rounded-full bg-white/15 blur-sm pointer-events-none" />
-                <Music4 className="w-11 h-11 text-white relative z-10 drop-shadow-[0_3px_8px_rgba(0,0,0,0.45)]" />
+                <div className="absolute top-2.5 left-4 right-9 h-7 rounded-full bg-white/85 blur-md opacity-80 pointer-events-none" />
+                <img
+                  src={`${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`}
+                  alt="Logo Orquesta Sinfónica William Taylor"
+                  className="relative z-10 w-full h-full object-contain drop-shadow-[0_4px_10px_rgba(30,27,75,0.35)]"
+                />
               </div>
             </div>
 
             {/* Título */}
-            <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none">
-              Invent<span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">OS</span>
+            <h1 className="px-2 text-5xl font-black text-white italic tracking-tight uppercase leading-[1.08]">
+              Invent<span className="inline-block pr-1.5 bg-gradient-to-r from-indigo-300 via-indigo-400 to-violet-400 bg-clip-text text-transparent">OS</span>
             </h1>
-            <p className="mt-3 text-slate-400/90 text-[10px] font-black uppercase tracking-[0.32em]">
+            <p className="mt-3.5 text-slate-400/90 text-[10px] font-black uppercase tracking-[0.3em]">
               Orquesta Sinfónica · William Taylor
             </p>
 
