@@ -26,7 +26,6 @@ import OverdueAlerts from './components/OverdueAlerts.tsx';
 import QRScannerView from './components/QRScannerView.tsx';
 import { LoginView } from './components/LoginView.tsx';
 import PresentationControlView from './components/PresentationControlView.tsx';
-import { LandingView } from './components/LandingView.tsx';
 import StudentDashboardStats from './components/StudentDashboardStats.tsx';
 
 // Hooks
@@ -64,7 +63,8 @@ const App: React.FC = () => {
   
   const [viewMode, setViewModeState] = useState<ViewMode>(() => {
     if (isStudentModeUrl) return 'student-check';
-    return 'landing';
+    // Sin landing: la app abre directo en el panel; si no hay sesión se muestra el login.
+    return 'dashboard';
   });
   const [studentDirectoryFilter, setStudentDirectoryFilter] = useState<'all' | 'basica' | 'media'>('all');
 
@@ -95,7 +95,7 @@ const App: React.FC = () => {
       
       const backupData = {
         backup_date: new Date().toISOString(),
-        version: "1.2.18 ExeApp",
+        version: "1.2.19 ExeApp",
         inventory: invRes.data || [],
         history: histRes.data || [],
         students: studRes.data || []
@@ -177,7 +177,7 @@ const App: React.FC = () => {
     } catch (e) {
       console.warn('No se pudo limpiar el caché offline al cerrar sesión:', e);
     }
-    setViewMode('landing');
+    setViewMode('dashboard');
   };
 
   // Determinar si la vista actual requiere login
@@ -306,12 +306,6 @@ const App: React.FC = () => {
     );
   }
 
-  if (viewMode === 'landing' && !isStudentModeUrl) {
-    return (
-      <LandingView onLoginClick={() => setViewMode('dashboard')} />
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 flex w-full max-w-full overflow-x-hidden relative">
       {isProcessing && (
@@ -378,9 +372,8 @@ const App: React.FC = () => {
 
       {/* RENDER LOGIN PROMPT IF NEEDED */}
       {needsAuth && (
-        <LoginView 
-          onSuccess={() => setShowLoginPrompt(false)} 
-          onClose={() => setViewMode('landing')}
+        <LoginView
+          onSuccess={() => setShowLoginPrompt(false)}
         />
       )}
 
