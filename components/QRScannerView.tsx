@@ -552,6 +552,18 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
   // ── GENERADOR DE QR ──
   const [qrImages, setQrImages] = useState<Map<string, string>>(new Map());
   const [isGenerating, setIsGenerating] = useState(false);
+  const [onlyAssigned, setOnlyAssigned] = useState(false);
+
+  // "DISPONIBLE"/"NO DISPONIBLE" son placeholders de dato, no un estudiante real.
+  const hasRealStudent = (item: InventoryItem): boolean => {
+    const s = globalNormalize(item.Estudiante || '');
+    return s !== '' && s !== 'disponible' && s !== 'no disponible';
+  };
+
+  const qrTargets = useMemo(
+    () => onlyAssigned ? inventory.filter(hasRealStudent) : inventory,
+    [inventory, onlyAssigned]
+  );
 
   const generateQRCodes = async () => {
     setIsGenerating(true);
@@ -560,7 +572,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
     // El QR se genera como enlace apuntando al sitio actual, para que sirva tanto
     // para abrir el formulario del estudiante como para el inventario dentro de la app.
     const baseUrl = window.location.origin;
-    for (const item of inventory) {
+    for (const item of qrTargets) {
       try {
         const text = buildQRUrl(item, baseUrl);
         const dataUrl = await QRCodeLib.toDataURL(text, {
@@ -583,7 +595,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const labels = inventory.map(item => {
+    const labels = qrTargets.map(item => {
       const qrSrc = qrImages.get(String(item.id)) || '';
       return `
         <div style="display:inline-block;width:190px;padding:8px;margin:4px;border:1px solid #ccc;text-align:center;page-break-inside:avoid;font-family:system-ui">
@@ -1165,6 +1177,18 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
               </p>
             </div>
 
+            <label className="flex items-center justify-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={onlyAssigned}
+                onChange={e => setOnlyAssigned(e.target.checked)}
+                className="w-4 h-4 rounded accent-indigo-600"
+              />
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Solo con estudiante asignado ({inventory.filter(hasRealStudent).length} de {inventory.length})
+              </span>
+            </label>
+
             <div className="flex gap-4">
               <button
                 onClick={generateQRCodes}
@@ -1174,7 +1198,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                 {isGenerating ? (
                   <><span className="animate-spin">⏳</span> Generando...</>
                 ) : (
-                  <><Scan className="w-4 h-4" /> Generar {inventory.length} QR</>
+                  <><Scan className="w-4 h-4" /> Generar {qrTargets.length} QR</>
                 )}
               </button>
               {qrImages.size > 0 && (
@@ -1190,7 +1214,7 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
             {/* Preview de QR generados */}
             {qrImages.size > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto custom-scrollbar">
-                {inventory.map(item => {
+                {qrTargets.map(item => {
                   const qrSrc = qrImages.get(String(item.id));
                   if (!qrSrc) return null;
                   return (
