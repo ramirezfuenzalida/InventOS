@@ -53,6 +53,37 @@
     });
   </script>
 
+  <!-- Auto-recarga ante versión desactualizada (íconos anclados a la pantalla de inicio
+       guardan un index.html viejo que apunta a archivos con hash que ya no existen tras
+       un nuevo despliegue). Se recarga una sola vez por sesión para evitar loops. -->
+  <script>
+    (function () {
+      var RELOAD_KEY = 'oswt_stale_reload_at';
+      function reloadOnce(reason) {
+        var last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+        var now = Date.now();
+        if (now - last > 15000) {
+          try { sessionStorage.setItem(RELOAD_KEY, String(now)); } catch (e) {}
+          console.warn('Recarga automática por versión desactualizada:', reason);
+          window.location.reload();
+        }
+      }
+      // Falla al cargar un chunk lazy (import() dinámico) — evento propio de Vite.
+      window.addEventListener('vite:preloadError', function (event) {
+        event.preventDefault();
+        reloadOnce('vite:preloadError');
+      });
+      // Falla al cargar el script de entrada (type="module") u otros scripts:
+      // los errores de carga de recursos no burbujean, por eso se usa fase de captura.
+      window.addEventListener('error', function (event) {
+        var tag = event.target;
+        if (tag && tag.tagName === 'SCRIPT') {
+          reloadOnce('script load error: ' + (tag.src || 'inline'));
+        }
+      }, true);
+    })();
+  </script>
+
   <!-- Favicon SVG Dinámico (Soluciona el error de representación) -->
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18V5l12-2v13'%3E%3C/path%3E%3Ccircle cx='6' cy='18' r='3'%3E%3C/circle%3E%3Ccircle cx='18' cy='16' r='3'%3E%3C/circle%3E%3C/svg%3E">
