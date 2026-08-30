@@ -34,6 +34,19 @@ import { useDebounce } from './hooks/useDebounce.ts';
 
 const APP_LOGO_URL = `${import.meta.env.BASE_URL}logo_orquesta_sinfonica_wt.png`;
 
+// Único correo con acciones destructivas (Excel, borrar, resguardo). Debe coincidir con is_app_admin() en la BD.
+const ADMIN_EMAILS = ['exequiel.ramirez@cmwt.cl'];
+
+// Únicas cuentas que pueden usar InventOS (Director + Monitores). El proyecto de Supabase
+// es compartido con otros módulos del colegio (pedagogía, audio, etc.), así que cualquier
+// cuenta @cmwt.cl válida podría autenticarse si no se filtra explícitamente aquí.
+const AUTHORIZED_EMAILS = [
+  'exequiel.ramirez@cmwt.cl',
+  'mauricio.vicencio@cmwt.cl',
+  'leonel.vasquez@cmwt.cl',
+  'jaime.lucero@cmwt.cl',
+];
+
 type ViewMode = 'landing' | 'dashboard' | 'list' | 'student-check' | 'directory' | 'reports' | 'monitor-detail' | 'loaned-detail' | 'repair-detail' | 'qr-access' | 'qr-scanner' | 'regular-detail' | 'bueno-detail' | 'presentation-control';
 
 const App: React.FC = () => {
@@ -125,17 +138,30 @@ const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [unauthorizedEmail, setUnauthorizedEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    // Se ejecuta una sola vez al montar (antes se re-suscribía en cada navegación).
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    // Cualquier cuenta válida del proyecto de Supabase (compartido con otros módulos del
+    // colegio) puede autenticarse; acá se corta el paso a quien no esté en AUTHORIZED_EMAILS,
+    // sin importar el método de login (contraseña o Google).
+    const applySession = (nextSession: Session | null) => {
+      const email = nextSession?.user?.email?.toLowerCase();
+      if (email && !AUTHORIZED_EMAILS.includes(email)) {
+        supabase.auth.signOut();
+        setUnauthorizedEmail(nextSession!.user!.email!);
+        setSession(null);
+        setIsAuthLoading(false);
+        return;
+      }
+      setSession(nextSession);
       setIsAuthLoading(false);
-    });
+    };
+
+    // Se ejecuta una sola vez al montar (antes se re-suscribía en cada navegación).
+    supabase.auth.getSession().then(({ data: { session } }) => applySession(session));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setIsAuthLoading(false);
+      applySession(session);
     });
 
     return () => subscription.unsubscribe();
@@ -186,8 +212,7 @@ const App: React.FC = () => {
   const needsAuth = isProtectedView && !session && !isStudentModeUrl;
 
   // Rol admin: solo estos correos ven las acciones destructivas (Excel, borrar, resguardo).
-  // El resto de cuentas @cmwt.cl (monitores) solo operan. Debe coincidir con is_app_admin() en la BD.
-  const ADMIN_EMAILS = ['exequiel.ramirez@cmwt.cl'];
+  // El resto de cuentas autorizadas (monitores) solo operan.
   const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email.toLowerCase());
 
   const filteredData = useMemo(() => {
@@ -370,6 +395,8 @@ const App: React.FC = () => {
       {needsAuth && (
         <LoginView
           onSuccess={() => setShowLoginPrompt(false)}
+          unauthorizedEmail={unauthorizedEmail}
+          onDismissUnauthorized={() => setUnauthorizedEmail(null)}
         />
       )}
 

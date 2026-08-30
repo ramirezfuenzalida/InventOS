@@ -5,17 +5,22 @@ import { Lock, Mail, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 interface LoginViewProps {
   onSuccess: () => void;
   onClose?: () => void;
+  /** Correo que se autenticó pero no está en la lista autorizada (App.tsx cerró la sesión). */
+  unauthorizedEmail?: string | null;
+  onDismissUnauthorized?: () => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose, unauthorizedEmail, onDismissUnauthorized }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    onDismissUnauthorized?.();
     setLoading(true);
     setErrorMsg(null);
 
@@ -34,6 +39,27 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose }) => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    onDismissUnauthorized?.();
+    setErrorMsg(null);
+    setGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          // Restringe el selector de cuentas de Google al workspace del colegio.
+          queryParams: { hd: 'cmwt.cl', prompt: 'select_account' },
+        },
+      });
+      if (error) throw error;
+      // La redirección a Google saca de la página; no hay más que hacer acá.
+    } catch (err: unknown) {
+      setGoogleLoading(false);
+      setErrorMsg(err instanceof Error ? err.message : 'No se pudo iniciar sesión con Google.');
     }
   };
 
@@ -96,6 +122,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose }) => {
               Orquesta Sinfónica · William Taylor
             </p>
 
+            {unauthorizedEmail && (
+              <div className="mt-7 w-full bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex items-start gap-3 text-left animate-in slide-in-from-top-2 duration-300">
+                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-rose-200 font-bold uppercase tracking-wide leading-tight">
+                  La cuenta {unauthorizedEmail} no está autorizada para usar InventOS. Contacta al director si crees que es un error.
+                </p>
+              </div>
+            )}
+
             {errorMsg && (
               <div className="mt-7 w-full bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex items-start gap-3 text-left animate-in slide-in-from-top-2 duration-300">
                 <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
@@ -105,7 +140,32 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose }) => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-8 w-full space-y-5">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
+              className="mt-8 w-full py-4 bg-white hover:bg-slate-100 text-slate-800 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {googleLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.57-5.17 3.57-8.82Z" />
+                  <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.88-3c-1.08.72-2.46 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.11A11.99 11.99 0 0 0 12 24Z" />
+                  <path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.61H1.26A11.99 11.99 0 0 0 0 12c0 1.94.46 3.77 1.26 5.39l4.01-3.11Z" />
+                  <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.26 6.61l4.01 3.11C6.22 6.86 8.87 4.75 12 4.75Z" />
+                </svg>
+              )}
+              Continuar con Google (@cmwt.cl)
+            </button>
+
+            <div className="flex items-center gap-3 mt-7 w-full">
+              <div className="h-px flex-1 bg-white/10" />
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">o con tu contraseña</span>
+              <div className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-5 w-full space-y-5">
               <div className="space-y-2 text-left">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-3">
                   Correo electrónico
