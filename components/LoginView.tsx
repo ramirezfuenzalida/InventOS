@@ -144,7 +144,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onClose, unauth
               type="button"
               onClick={handleGoogleLogin}
               disabled={googleLoading}
-              className="mt-8 w-full py-4 bg-white hover:bg-slate-100 text-slate-800 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="mt-8 w-full py-4 bg-white/[0.06] hover:bg-white/[0.11] border border-white/[0.14] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {googleLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
