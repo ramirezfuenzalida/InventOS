@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 import { InventoryItem } from '../types.ts';
 import { globalNormalize, getEstadoCategoria, isItemLoaned, escapeHtml, buildQRUrl, parseQRText } from '../utils.ts';
 import { supabase } from '../supabaseClient.ts';
+import { useConfirm } from './ConfirmDialog.tsx';
 
 // AudioContext compartido: en móvil el audio queda bloqueado hasta un gesto del
 // usuario, así que reusamos un único contexto y lo reanudamos al tocar "escanear".
@@ -124,6 +125,7 @@ interface ScanSession {
 }
 
 const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrument }) => {
+  const [confirmAsync, confirmDialog] = useConfirm();
   const [activeTab, setActiveTab] = useState<ScanTab>('scanner');
   const [scanResult, setScanResult] = useState<{ found: boolean; item?: InventoryItem; raw: string } | null>(null);
   const [scannedIds, setScannedIds] = useState<Set<string>>(new Set());
@@ -755,8 +757,8 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                       Continuar
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`¿Eliminar sesión "${session.name}"? Esta acción no se puede deshacer.`)) {
+                      onClick={async () => {
+                        if (await confirmAsync({ title: 'Eliminar Sesión', message: `¿Eliminar sesión "${session.name}"? Esta acción no se puede deshacer.`, confirmLabel: 'Sí, eliminar' })) {
                           deleteSession(session.id);
                         }
                       }}
@@ -1053,8 +1055,8 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                 <FolderOpen className="w-4 h-4" /> <span className="hidden sm:inline">Sesiones</span>
               </button>
               <button
-                onClick={() => {
-                  if (confirm('¿Reiniciar esta sesión? Se perderán todos los escaneos de esta sesión.')) {
+                onClick={async () => {
+                  if (await confirmAsync({ title: 'Reiniciar Sesión', message: '¿Reiniciar esta sesión? Se perderán todos los escaneos de esta sesión.', confirmLabel: 'Sí, reiniciar' })) {
                     setScannedIds(new Set());
                   }
                 }}
@@ -1347,8 +1349,8 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
                           </button>
                         )}
                         <button
-                          onClick={() => {
-                            if (confirm(`¿Eliminar la sesión "${session.name}"? Esta acción no se puede deshacer.`)) {
+                          onClick={async () => {
+                            if (await confirmAsync({ title: 'Eliminar Sesión', message: `¿Eliminar la sesión "${session.name}"? Esta acción no se puede deshacer.`, confirmLabel: 'Sí, eliminar' })) {
                               deleteSession(session.id);
                             }
                           }}
@@ -1365,6 +1367,8 @@ const QRScannerView: React.FC<QRScannerViewProps> = ({ inventory, onViewInstrume
           </div>
         </div>
       )}
+
+      {confirmDialog}
     </div>
   );
 };

@@ -27,6 +27,7 @@ import {
     Mail
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { useConfirm } from './ConfirmDialog.tsx';
 
 import { Student } from '../types';
 
@@ -36,6 +37,7 @@ interface DirectoryViewProps {
 }
 
 const DirectoryView: React.FC<DirectoryViewProps> = ({ initialFilter = 'all', onBackToDashboard }) => {
+    const [confirmAsync, confirmDialog] = useConfirm();
     const [students, setStudents] = useState<Student[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<'all' | 'basica' | 'media'>(initialFilter);
@@ -76,7 +78,7 @@ const DirectoryView: React.FC<DirectoryViewProps> = ({ initialFilter = 'all', on
     };
 
     const handleDeletePhoto = async () => {
-        if (!confirm('¿Estás seguro de eliminar la foto?')) return;
+        if (!(await confirmAsync({ title: 'Eliminar Foto', message: '¿Estás seguro de eliminar la foto?', confirmLabel: 'Sí, eliminar' }))) return;
 
         setUploading(true);
         try {
@@ -245,7 +247,7 @@ const DirectoryView: React.FC<DirectoryViewProps> = ({ initialFilter = 'all', on
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('¿Estás seguro de eliminar a este estudiante?')) return;
+        if (!(await confirmAsync({ title: 'Eliminar Estudiante', message: '¿Estás seguro de eliminar a este estudiante?', confirmLabel: 'Sí, eliminar' }))) return;
 
         setLoading(true);
         try {
@@ -263,6 +265,7 @@ const DirectoryView: React.FC<DirectoryViewProps> = ({ initialFilter = 'all', on
 
     if (viewMode === 'detail' && selectedStudent) {
         return (
+            <>
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
                     <div className="flex items-center gap-5">
@@ -418,11 +421,14 @@ const DirectoryView: React.FC<DirectoryViewProps> = ({ initialFilter = 'all', on
                     </div>
                 </div>
             </div>
+            {confirmDialog}
+            </>
         );
     }
 
     if (viewMode === 'edit') {
         return (
+            <>
             <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
                 <div className="bg-slate-900/60 backdrop-blur-2xl p-6 sm:p-16 rounded-3xl sm:rounded-[80px] border border-white/5 shadow-[0_64px_128px_rgba(0,0,0,0.8)]">
                     <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-20 relative z-10">
@@ -616,6 +622,8 @@ const DirectoryView: React.FC<DirectoryViewProps> = ({ initialFilter = 'all', on
                     </div>
                 </div>
             </div>
+            {confirmDialog}
+            </>
         );
     }
 
@@ -772,6 +780,7 @@ const DirectoryView: React.FC<DirectoryViewProps> = ({ initialFilter = 'all', on
                     </table>
                 </div>
             </div>
+            {confirmDialog}
         </div>
     );
 };

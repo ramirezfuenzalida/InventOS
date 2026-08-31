@@ -9,6 +9,7 @@ import autoTable from 'jspdf-autotable';
 import { InventoryItem } from '../types.ts';
 import { globalNormalize, parseQRText } from '../utils.ts';
 import { supabase } from '../supabaseClient.ts';
+import { useConfirm } from './ConfirmDialog.tsx';
 
 // Web Audio API beep sound
 const playScanSound = (success: boolean) => {
@@ -127,6 +128,8 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
 
   // Filtro por Familias
   const [selectedFamilyFilter, setSelectedFamilyFilter] = useState<string>('TODOS');
+
+  const [confirmAsync, confirmDialog] = useConfirm();
 
   const scannerRef = useRef<any>(null);
 
@@ -273,7 +276,12 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
       return;
     }
 
-    if (!confirm("¿Estás seguro de finalizar esta presentación? Se marcará como completada y los instrumentos volverán a su flujo normal.")) {
+    const confirmed = await confirmAsync({
+      title: 'Finalizar Presentación',
+      message: '¿Estás seguro de finalizar esta presentación? Se marcará como completada y los instrumentos volverán a su flujo normal.',
+      confirmLabel: 'Sí, finalizar',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -295,7 +303,12 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
   // Eliminar Sesión
   const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("¿Eliminar esta presentación? Se borrarán todos los registros asociados de salida y retorno de esta fecha. Esta acción no se puede deshacer.")) {
+    const confirmed = await confirmAsync({
+      title: 'Eliminar Presentación',
+      message: '¿Eliminar esta presentación? Se borrarán todos los registros asociados de salida y retorno de esta fecha. Esta acción no se puede deshacer.',
+      confirmLabel: 'Sí, eliminar',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -888,7 +901,8 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
                     </span>
                     <button
                       onClick={(e) => handleDeleteSession(session.id, e)}
-                      className="p-2 hover:bg-rose-500/10 text-slate-600 hover:text-rose-500 rounded-xl transition-all"
+                      disabled={isProcessingAction}
+                      className="p-2 hover:bg-rose-500/10 text-slate-600 hover:text-rose-500 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       title="Eliminar Presentación"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1366,6 +1380,8 @@ const PresentationControlView: React.FC<PresentationControlViewProps> = ({ inven
           </div>
         </div>
       )}
+
+      {confirmDialog}
 
     </div>
   );
